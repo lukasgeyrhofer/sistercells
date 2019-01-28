@@ -11,33 +11,41 @@ import sistercellclass as scc
 import matplotlib
 matplotlib.use('SVG')
 import matplotlib.pyplot as plt
-import matplotlib.gridspec as gridspec
-
-
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("-i","--infiles",nargs="*",default=[])
+    parser.add_argument("-i","--infiles",         default = [], nargs = "*")
+    parser.add_argument("-o","--outfile",         default = "alltrajectories", type = str)
+    parser.add_argument("-k","--key",             default = "length", type = str)
+    parser.add_argument("-H","--HistoTrajLength", default = False, action = "store_true")
+    parser.add_argument("-v","--verbose",         default = False, action = "store_true")
     args=parser.parse_args()
     
     data = scc.SisterCellData(**vars(args))
+    
+    assert args.key in data.keylist_stripped, 'option -k "KEY" only allows values in [' + ', '.join(data.keylist_stripped) + ']'
     
     fig,axes  = plt.subplots(nrows=len(data),ncols=1,figsize=(10, 100), dpi=100, frameon = False, sharex = True, sharey = True)
     
     maxtimes = list()
     
-    
-    for i,d in enumerate(data):
+    for i,fn,d in data:
         maxtimes.append(np.max(d[1][u'timeA']))
-        print 'open file \033[91m{:70s}\033[0m maxtime: {:5.2f}'.format(d[0],np.max(d[1][u'timeA']))
-        axes[i].plot(d[1][u'timeA'],d[1][u'lengthA'])
-        axes[i].plot(d[1][u'timeB'],d[1][u'lengthB'])
+        if args.verbose:
+            print 'open file \033[91m{:s}\033[0m maxtime: {:5.2f}'.format(fn,np.max(d[u'timeA']))
+        axes[i].plot(d[u'timeA'],d[args.key + 'A'])
+        axes[i].plot(d[u'timeB'],d[args.key + 'B'])
     
-    fig.savefig('alltrajectories.svg')
+    if args.verbose:
+        print 'writing trajectories to \033[94m{:s}\033[0m'.format(args.outfile + '.svg')
+    fig.savefig(args.outfile + '.svg')
     
-    fig2 = plt.figure()
-    plt.hist(maxtimes,range=(0,100),bins=101)
-    fig2.savefig('maxtimehist.svg')
+    if args.HistoTrajLength:
+        if args.verbose:
+            print 'writing histogram to \033[94m{:s}\033[0m'.format('maxtimehist.svg')
+        fig2 = plt.figure()
+        plt.hist(maxtimes,range=(0,100),bins=101)
+        fig2.savefig('maxtimehist.svg')
 
 if __name__ == "__main__":
     main()
