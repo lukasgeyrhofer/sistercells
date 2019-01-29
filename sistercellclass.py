@@ -73,6 +73,7 @@ class SisterCellData(object):
             if bins is None:    count,binedges = np.histogram(x,range=historange)
             else:               count,binedges = np.histogram(x,range=historange,bins=bins)
         bincenter = binedges[:-1] + .5 * np.diff(binedges)
+        bins      = len(bincenter)
 
         p   = count/float(sum(count))
         w   = np.array([np.sum(p[:k]) for k in range(bins)])
@@ -96,14 +97,14 @@ class SisterCellData(object):
         
         ret = list()
         for ks in keysuffix:
-            ret_ks = dict()
-            diffdata = np.diff(self.__data[dataID][discretize_by + ks])
-            index_div = np.where(diffdata < self.otsu(diffdata))
+            diffdata  = np.diff(self.__data[dataID][discretize_by + ks])
+            index_div = np.where(diffdata < self.otsu(diffdata))[0].flatten()
+            time_div  = 0.5 * np.array(self.__data[dataID]['time' + ks][index_div + 1]) + 0.5 * np.array(self.__data[dataID]['time'+ks][index_div])
             
-            time_div = 0.5 * (self.__data[dataID]['time' + ks][index_div + 1] + self.__data[dataID]['time'+ks][index_div])
-            ret_ks['generationtime' + ks] = np.diff(time_div)
-            ret_ks[discretize_by + '_birth' + ks] = (self.__data[dataID][discretize_by + ks][index_div+1])[:-1]
-            ret_ks[discretize_by + '_final' + ks] = (self.__data[dataID][discretize_by + ks][index_divA])[1:]
+            ret_ks = dict()
+            ret_ks['generationtime' + ks]          = np.diff(time_div)
+            ret_ks[discretize_by + '_birth' + ks]  = np.array(self.__data[dataID][discretize_by + ks][index_div+1])[:-1]
+            ret_ks[discretize_by + '_final' + ks]  = np.array(self.__data[dataID][discretize_by + ks][index_div])[1:]
             ret_ks['growth_' + discretize_by + ks] = np.array([
                             self.LMSQ(
                                 self.__data[dataID][discretize_by + ks][index_div[i]+1:index_div[i+1]+1],           # x-values
