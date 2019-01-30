@@ -5,14 +5,14 @@ import pandas as pd
 
 class SisterCellData(object):
     def __init__(self,**kwargs):
-        self.__infiles = kwargs.get('infiles',[])
-        
-        self.__sisterdata = kwargs.get('sisterdata',True)
+        self.__infiles    = kwargs.get('infiles',[])
+        self.__debugmode  = kwargs.get('debugmode',False) # return only single trajectory in iteration
         
         self.__data = list()
         self.__dataorigin = list()
         self.__keylist = list()
         
+
         for filename in self.__infiles:
             tmpdata = pd.read_excel(filename)
             self.__data.append(tmpdata)
@@ -131,8 +131,12 @@ class SisterCellData(object):
 
     def __iter__(self):
         dataIDs = np.arange(len(self),dtype=int)
-        for dataID,origin,data in zip(dataIDs,self.__dataorigin,self.__data):
-            yield dataID,origin,data
+        if self.__debugmode:
+            # yield only first element in debugmode to check analysis on this trajectory
+            yield 0,self.__dataorigin[0],self.__data[0]
+        else:
+            for dataID,origin,data in zip(dataIDs,self.__dataorigin,self.__data):
+                yield dataID,origin,data
 
 
 
