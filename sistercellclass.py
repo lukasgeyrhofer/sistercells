@@ -7,15 +7,19 @@ class SisterCellData(object):
     def __init__(self,**kwargs):
         self.__infiles    = kwargs.get('infiles',[])
         self.__debugmode  = kwargs.get('debugmode',False) # return only single trajectory in iteration
+        self.__sisterdata = kwargs.get('sisterdata',True)
         
         # lists to store data internally
         self.__data = list()
         self.__dataorigin = list()
         self.__keylist = list()
-
+        
         # load first sheet of each Excel-File, fill internal data structure
         for filename in self.__infiles:
-            tmpdata = pd.read_excel(filename)
+            try:
+                tmpdata = pd.read_excel(filename)
+            except:
+                continue
             self.__data.append(tmpdata)
             self.__dataorigin.append(filename)
             for k in tmpdata.keys():
@@ -102,6 +106,9 @@ class SisterCellData(object):
         # return two pandas-dataframes for the two trajectories usually contained in one file as two elements of a list
         # as the two sisters do not need to have the same number of cell divisions, a single dataframe might cause problems with variably lengthed trajectories
         ret = list()
+        
+        alldiffdata = np.concatenate([np.diff(self.__data[dataID][discretize_by + ks]) for ks in keysuffix])
+        
         for ks in keysuffix:
             # use 'discretize_by' as the column name that should serve as measurement that indicates the division
             # in our data, both 'length' and 'cellsize' should be OK.
@@ -110,7 +117,12 @@ class SisterCellData(object):
             #  * scattering around 'large' negative values for cell divisions
             diffdata  = np.diff(self.__data[dataID][discretize_by + ks])
             # estimate a threshold from the data between the two peaks in the bimodal distribution with Otsu's method, then get indices of these transitions
-            index_div = np.where(diffdata < self.otsu(diffdata))[0].flatten()
+            index_div = np.where(diffdata < self.otsu(alldiffdata))[0].flatten()
+            
+            dj = sum(np.where(np.diff(index_div) == 1)[0].flatten())
+            if dj > 0:
+                print self.__dataorigin[dataID],ks,dj
+            
             # timepoint of division is assumed to be the average before and after the drop in signal
             time_div  = 0.5 * np.array(self.__data[dataID]['time' + ks][index_div + 1]) + 0.5 * np.array(self.__data[dataID]['time'+ks][index_div])
             

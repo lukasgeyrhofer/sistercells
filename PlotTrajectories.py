@@ -30,7 +30,7 @@ def main():
     maxtimes = list()
     
     for i,fn,d in data:
-        maxtimes.append(np.max(d[1][u'timeA']))
+        maxtimes.append(np.max(d[u'timeA']))
         if args.verbose:
             print 'open file \033[91m{:s}\033[0m maxtime: {:5.2f}'.format(fn,np.max(d[u'timeA']))
         axes[i].plot(d[u'timeA'],d[args.key + 'A'])
