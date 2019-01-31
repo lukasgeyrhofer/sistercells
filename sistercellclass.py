@@ -8,11 +8,15 @@ class SisterCellData(object):
         self.__infiles    = kwargs.get('infiles',[])
         self.__debugmode  = kwargs.get('debugmode',False) # return only single trajectory in iteration
         self.__sisterdata = kwargs.get('sisterdata',True)
+        self.__discretize_bins = kwargs.get('DiscretizeBins',50)
         
         # lists to store data internally
         self.__data = list()
         self.__dataorigin = list()
         self.__keylist = list()
+        
+        # used for discretization
+        self.__datadiffranges = dict()
         
         # load first sheet of each Excel-File, fill internal data structure
         for filename in self.__infiles:
@@ -25,6 +29,12 @@ class SisterCellData(object):
             for k in tmpdata.keys():
                 if not str(k) in self.__keylist:
                     self.__keylist.append(str(k))
+                
+                ks = str(k).strip('AB ')
+                if not ks in self.__datadiffranges.keys():
+                    self.__datadiffranges[ks] = np.zeros(2)
+                self.__datadiffranges[ks][0] = np.min([np.min(np.diff(tmpdata[k])),self.__datadiffranges[ks][0]])
+                self.__datadiffranges[ks][1] = np.max([np.max(np.diff(tmpdata[k])),self.__datadiffranges[ks][1]])
         
         # there's no point in not having data ...
         # ... or something went wrong. rather stop here
@@ -117,11 +127,11 @@ class SisterCellData(object):
             #  * scattering around 'large' negative values for cell divisions
             diffdata  = np.diff(self.__data[dataID][discretize_by + ks])
             # estimate a threshold from the data between the two peaks in the bimodal distribution with Otsu's method, then get indices of these transitions
-            index_div = np.where(diffdata < self.otsu(alldiffdata))[0].flatten()
+            index_div = np.where(diffdata < self.otsu(alldiffdata,bins = self.__discretize_bins,historange = self.__datadiffranges[discretize_by]))[0].flatten()
+            
             
             dj = sum(np.where(np.diff(index_div) == 1)[0].flatten())
-            if dj > 0:
-                print self.__dataorigin[dataID],ks,dj
+            # todo: need to implement some lines of code that detect if a division spans multiple time points, and corrects the algorithm below properly
             
             # timepoint of division is assumed to be the average before and after the drop in signal
             time_div  = 0.5 * np.array(self.__data[dataID]['time' + ks][index_div + 1]) + 0.5 * np.array(self.__data[dataID]['time'+ks][index_div])
@@ -146,9 +156,11 @@ class SisterCellData(object):
             ret.append(pd.DataFrame(ret_ks))
         return ret
 
+
     # access single dataframe by its ID
     def __getitem__(self,key):
         return self.__data[key]
+
     
     # should not allow accessing internal variables in other ways than funneling through this here
     def __getattr__(self,key):
@@ -158,10 +170,12 @@ class SisterCellData(object):
             return self.__keylist
         elif key == "keylist_stripped":
             return list(set([s.strip('AB ') for s in self.__keylist]))
+
     
     # convenience
     def __len__(self):
         return len(self.__data)
+
 
     # data will be processes as loop over the class instance
     # 'debugmode' only returns a single item (the first one)

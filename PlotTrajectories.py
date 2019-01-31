@@ -44,7 +44,7 @@ def main():
         if args.verbose:
             print 'writing histogram to \033[94m{:s}\033[0m'.format('maxtimehist.svg')
         fig2 = plt.figure()
-        plt.hist(maxtimes,range=(0,100),bins=101)
+        plt.hist(maxtimes,range=(0,100),bins=51)
         fig2.savefig('maxtimehist.svg')
 
 if __name__ == "__main__":
