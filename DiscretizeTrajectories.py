@@ -18,10 +18,13 @@ def autocorrelation (x) :
     pi = np.fft.ifft(p)
     return np.real(pi)[:x.size/2]/np.sum(xp**2)
 
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("-i","--infiles",nargs="*",default=[])
     parser.add_argument("-k","--DiscretizeKey",default="length",type=str)
+    parser.add_argument("-o","--outfileprefix",default="ACF",type=str)
+    parser.add_argument("-m","--minlength",default=10,type=int)
     args = parser.parse_args()
     
     data = scc.SisterCellData(**vars(args))
@@ -31,16 +34,22 @@ def main():
     for x in data:
         for y in data.CellDivisionTrajectory(x[0],discretize_by = args.DiscretizeKey):
             for k in y.keys():
-                if k != 'time':
+                if k != 'time' and len(y[k]) > args.minlength:
                     if not k in correlationfunctions.keys():
                         correlationfunctions[k] = list()
-                    correlationfunctions[k].append(np.correlate(y[k],y[k]))
-    cf_avg = dict()
+                    correlationfunctions[k].append(autocorrelation(y[k]))
+                    
     for k in correlationfunctions.keys():
-        l = np.min([len(a) for a in correlationfunctions[k]])
-        cf_avg[k] = np.avg([a[:l] for a in correlationfunctions[k]])
-        print k
-        print cf_avg
+        maxL = np.max([len(a) for a in correlationfunctions[k]])
+        cf_sum   = np.zeros(maxL,dtype = np.float)
+        cf_count = np.zeros(maxL,dtype = np.float)
+        for acf in correlationfunctions[k]:
+            if not np.any(np.isnan(acf)):
+                cf_sum[:len(acf)] += acf
+                cf_count[:len(acf)] += 1
+        if cf_count[-1] == 0:
+            maxL = np.argmin(cf_count > 0)
+        np.savetxt(args.outfileprefix + "_" + k.replace(" ","-"),np.array([np.arange(maxL),cf_sum[:maxL]/cf_count[:maxL]]).T)
             
     
     
