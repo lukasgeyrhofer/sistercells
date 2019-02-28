@@ -26,18 +26,11 @@ def main():
     corrmatrix_sumAB   = np.zeros((args.MaxLag,args.MaxLag),dtype=np.float)
     corrmatrix_sumA    = np.zeros((args.MaxLag,args.MaxLag),dtype=np.float)
     corrmatrix_sumB    = np.zeros((args.MaxLag,args.MaxLag),dtype=np.float)
-    
     corrmatrix_count   = np.zeros((args.MaxLag,args.MaxLag),dtype=np.float)
     
-    avgA_sum         = 0.
-    avgB_sum         = 0.
-    avgA_count       = 0.
-    avgB_count       = 0.
-
-
+    
     for dataID,fn,x in data:
-        if args.verbose:
-            print(dataID,fn)
+        if args.verbose: print(dataID,fn)
         
         trajA,trajB = data.CellDivisionTrajectory(dataID, discretize_by = args.DiscretizeKey)
         
@@ -46,20 +39,23 @@ def main():
                 corrmatrix_sumAB[i,j]   += trajA[args.CorrelationKey + 'A'][i] * trajB[args.CorrelationKey + 'B'][j]
                 corrmatrix_sumA[i,j]    += trajA[args.CorrelationKey + 'A'][i]
                 corrmatrix_sumB[i,j]    += trajB[args.CorrelationKey + 'B'][j]
-                
                 corrmatrix_count[i,j]   += 1
                 
     # compute correlation
     cm = (corrmatrix_sumAB - corrmatrix_sumA * corrmatrix_sumB / corrmatrix_count)/corrmatrix_count
 
     # symmetrize
-    if args.symmetrize: cm = 0.5*(cm + cm.T)
+    if args.symmetrize:
+        cmtmp = 0.5*(cm + cm.T)
+        cm = cmtmp
 
     # output
     fp = open(args.outfile,'w')
     for i in range(np.shape(cm)[0]):
         for j in range(np.shape(cm)[1]):
-            fp.write('{:3d} {:3d} {:14.6e}\n'.format(i,j,cm[i,j]))
+            fp.write('{:3d} {:3d} '.format(i,j))
+            if args.symmetrize: fp.write('{:14.6e}\n'.format(0.5*(cm[i,j] + cm[j,i])))
+            else:               fp.write('{:14.6e}\n'.format(cm[i,j]))
         fp.write('\n')
     fp.close()
         
