@@ -25,6 +25,7 @@ def main():
     parser.add_argument("-k","--DiscretizeKey",default="length",type=str)
     parser.add_argument("-o","--outfileprefix",default="ACF",type=str)
     parser.add_argument("-m","--minlength",default=10,type=int)
+    parser.add_argument("-S","--averageSisters",default=False,action="store_true")
     args = parser.parse_args()
     
     data = scc.SisterCellData(**vars(args))
@@ -35,9 +36,12 @@ def main():
         for y in data.CellDivisionTrajectory(x[0],discretize_by = args.DiscretizeKey):
             for k in y.keys():
                 if k != 'time' and len(y[k]) > args.minlength:
-                    if not k in correlationfunctions.keys():
-                        correlationfunctions[k] = list()
-                    correlationfunctions[k].append(autocorrelation(y[k]))
+                    k0 = k
+                    if args.averageSisters:
+                        k0 = k.rstrip('AB')
+                    if not k0 in correlationfunctions.keys():
+                        correlationfunctions[k0] = list()
+                    correlationfunctions[k0].append(autocorrelation(y[k]))
                     
     for k in correlationfunctions.keys():
         maxL = np.max([len(a) for a in correlationfunctions[k]])
