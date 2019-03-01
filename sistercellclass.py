@@ -14,10 +14,7 @@ class SisterCellData(object):
         self.__data = list()
         self.__dataorigin = list()
         self.__keylist = list()
-        
-        # used for discretization
-        self.__datadiffranges = dict()
-        
+                
         # load first sheet of each Excel-File, fill internal data structure
         for filename in self.__infiles:
             try:
@@ -29,12 +26,7 @@ class SisterCellData(object):
             for k in tmpdata.keys():
                 if not str(k) in self.__keylist:
                     self.__keylist.append(str(k))
-                
-                ks = str(k).strip('AB ')
-                if not ks in self.__datadiffranges.keys():
-                    self.__datadiffranges[ks] = np.zeros(2)
-                self.__datadiffranges[ks][0] = np.min([np.min(np.diff(tmpdata[k])),self.__datadiffranges[ks][0]])
-                self.__datadiffranges[ks][1] = np.max([np.max(np.diff(tmpdata[k])),self.__datadiffranges[ks][1]])
+
         
         # there's no point in not having data ...
         # ... or something went wrong. rather stop here
@@ -79,28 +71,22 @@ class SisterCellData(object):
 
 
 
-    def otsu(self,x,historange = None, bins = None):
+    def otsu(self,x):
         # otsu's method
         # described in IEEE TRANSACTIONS ON SYSTEMS, MAN, AND CYBERNETICS (1979)
         # usually used to binarize photos into black/white
-        if historange is None:
-            if bins is None:    count,binedges = np.histogram(x)
-            else:               count,binedges = np.histogram(x,bins=bins)
-        else:
-            if bins is None:    count,binedges = np.histogram(x,range=historange)
-            else:               count,binedges = np.histogram(x,range=historange,bins=bins)
-        bincenter = binedges[:-1] + .5 * np.diff(binedges)
-        bins      = len(bincenter)
 
-        p   = count/float(sum(count))
-        w   = np.array([np.sum(p[:k]) for k in range(bins)])
-        m   = np.array([np.dot(p[:k],bincenter[:k]) for k in range(bins)])
-        mT  = np.dot(p,bincenter)
+        sx = np.sort(x)
+        lx = len(x)
+
+        w   = np.arange(lx,dtype=np.float)/lx
+        m   = np.array([np.mean(sx[:k]) * w[k] if k > 0 else 0 for k in range(lx)])
+        mT  = np.mean(sx)
         
-        sB  = np.array([(mT * w[k] - m[k])**2/(w[k]*(1.-w[k])) if w[k]*(1.-w[k]) > 0 else 0 for k in range(bins)])
+        sB  = np.array([(mT * w[k] - m[k])**2/(w[k]*(1.-w[k])) if w[k]*(1.-w[k]) > 0 else 0 for k in range(lx)])
         idx = np.argmax(sB)
         
-        return bincenter[idx]
+        return sx[idx]
 
 
 
@@ -127,7 +113,7 @@ class SisterCellData(object):
             #  * scattering around 'large' negative values for cell divisions
             diffdata  = np.diff(self.__data[dataID][discretize_by + ks])
             # estimate a threshold from the data between the two peaks in the bimodal distribution with Otsu's method, then get indices of these transitions
-            index_div = np.where(diffdata < self.otsu(alldiffdata,bins = self.__discretize_bins,historange = self.__datadiffranges[discretize_by]))[0].flatten()
+            index_div = np.where(diffdata < self.otsu(alldiffdata))[0].flatten()
             
             
             dj = sum(np.where(np.diff(index_div) == 1)[0].flatten())
