@@ -75,6 +75,7 @@ class SisterCellData(object):
         # otsu's method
         # described in IEEE TRANSACTIONS ON SYSTEMS, MAN, AND CYBERNETICS (1979)
         # usually used to binarize photos into black/white
+        # here modified to use bins with single entries for each measurement
 
         sx = np.sort(x)
         lx = len(x)
