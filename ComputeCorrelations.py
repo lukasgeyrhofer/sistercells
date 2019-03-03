@@ -36,7 +36,7 @@ def main():
         
         trajA,trajB = data.CellDivisionTrajectory(dataID, discretize_by = args.DiscretizeKey)
 
-        for corrkey in [ k.strip('AB ') for k in trajA.keys() if k[:4].upper() != 'TIME']:
+        for corrkey in trajA.keys():
             if not corrkey in corrmatrix_sumAB.keys():
                 corrmatrix_sumAB[corrkey] = np.zeros((args.MaxLag,args.MaxLag),dtype=np.float)
                 corrmatrix_sumA[corrkey]  = np.zeros((args.MaxLag,args.MaxLag),dtype=np.float)
@@ -45,9 +45,9 @@ def main():
         
             for i in range(min(args.MaxLag,len(trajA))):
                 for j in range(min(args.MaxLag,len(trajB))):
-                    corrmatrix_sumAB[corrkey][i,j]   += trajA[corrkey + 'A'][i] * trajB[corrkey + 'B'][j]
-                    corrmatrix_sumA[corrkey][i,j]    += trajA[corrkey + 'A'][i]
-                    corrmatrix_sumB[corrkey][i,j]    += trajB[corrkey + 'B'][j]
+                    corrmatrix_sumAB[corrkey][i,j]   += trajA[corrkey][i] * trajB[corrkey][j]
+                    corrmatrix_sumA[corrkey][i,j]    += trajA[corrkey][i]
+                    corrmatrix_sumB[corrkey][i,j]    += trajB[corrkey][j]
                     corrmatrix_count[corrkey][i,j]   += 1
                 
 
@@ -62,7 +62,7 @@ def main():
                 outvalue = cm[corrkey][i,j]
                 if args.Symmetrize: outvalue  = 0.5*(cm[corrkey][i,j] + cm[corrkey][j,i])
                 if args.Normalize:  outvalue /= cm[corrkey][0,0]
-                fp.write('{:3d} {:3d} {:14.6e}\n'.format(i,j,outvalue))
+                fp.write('{:3d} {:3d} {:14.6e}\n'.format(i+1,j+1,outvalue)) # add 1, since first data point is first (!) generation of sisters
             fp.write('\n')
         fp.close()
         

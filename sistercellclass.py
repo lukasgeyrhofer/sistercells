@@ -121,7 +121,7 @@ class SisterCellData(object):
             dj = sum(np.where(np.diff(index_div) == 1)[0].flatten())
             
             # timepoint of division is assumed to be the average before and after the drop in signal
-            time_div  = 0.5 * np.array(self.__data[dataID]['time' + ks][index_div + 1]) + 0.5 * np.array(self.__data[dataID]['time'+ks][index_div])
+            time_div  = np.concatenate([[1.5*self.__data[dataID]['time' + ks][0] - 0.5 * self.__data[dataID]['time' + ks][1]],0.5 * np.array(self.__data[dataID]['time' + ks][index_div + 1]) + 0.5 * np.array(self.__data[dataID]['time'+ks][index_div])])
             
             # store results in dictionary, which can be easier transformed into pandas-dataframe
             # values computed for each cell cycle are
@@ -130,10 +130,11 @@ class SisterCellData(object):
             #  * size at division
             #  * Least Mean Squares Estimator for the (exponential) growth rate over the full division cycle
             ret_ks = dict()
-            ret_ks['generationtime' + ks]          = np.concatenate([[self.__data[dataID]['time' + ks][index_div[0]] - 0.5 * self.__data[dataID]['time' + ks][0]],np.diff(time_div)])
-            ret_ks[discretize_by + '_birth' + ks]  = np.concatenate([[self.__data[dataID][discretize_by + ks][0]],np.array(self.__data[dataID][discretize_by + ks][index_div+1])[:-1]])
-            ret_ks[discretize_by + '_final' + ks]  = np.array(self.__data[dataID][discretize_by + ks][index_div])
-            ret_ks['growth_' + discretize_by + ks] = np.concatenate([
+            #ret_ks['divisiontimes']           = np.array(time_div)
+            ret_ks['generationtime']          = np.diff(time_div)
+            ret_ks[discretize_by + '_birth']  = np.concatenate([[self.__data[dataID][discretize_by + ks][0]],np.array(self.__data[dataID][discretize_by + ks][index_div+1])[:-1]])
+            ret_ks[discretize_by + '_final']  = np.array(self.__data[dataID][discretize_by + ks][index_div])
+            ret_ks['growth_' + discretize_by] = np.concatenate([
                             [self.LMSQ(self.__data[dataID]['time' + ks][:index_div[0]],np.log(self.__data[dataID][discretize_by + ks][:index_div[0]]),cov=False)[1]], # first generation
                             np.array([self.LMSQ(
                                 self.__data[dataID]['time' + ks][index_div[i]+1:index_div[i+1]+1],                  # x-values
