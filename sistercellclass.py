@@ -159,6 +159,12 @@ class SisterCellData(object):
             return self.__keylist
         elif key == "keylist_stripped":
             return list(set([s.strip('AB ') for s in self.__keylist]))
+        elif key == 'timestep':
+            ts = self[0]['timeA'][1] - self[0]['timeA'][0]
+            for dataID in range(len(self)):
+                dt = np.diff(self.__data[dataID]['timeA'])
+                if ts > np.min(dt): ts = np.min(dt)
+            return ts
 
     
     # convenience
