@@ -17,7 +17,7 @@ def main():
     
     parser_alg = parser.add_argument_group(description = "==== Algorithm parameters ====")
     parser_alg.add_argument("-k","--DiscretizeKey", default = 'length',     type = str)
-    parser_alg.add_argument("-m","--MaxLag",        default = 20,           type = int)
+    parser_alg.add_argument("-m","--MaxLag",        default = 10,           type = int)
     parser_alg.add_argument("-S","--Symmetrize",    default = False,        action = "store_true")
     parser_alg.add_argument("-N","--Normalize",     default = False,        action = "store_true")
     args = parser.parse_args()
@@ -60,7 +60,7 @@ def main():
         for i in range(np.shape(cm[corrkey])[0]):
             for j in range(np.shape(cm[corrkey])[1]):
                 outvalue = cm[corrkey][i,j]
-                if args.Symmetrize: outvalue = 0.5*(cm[corrkey][i,j] + cm[corrkey][j,i])
+                if args.Symmetrize: outvalue  = 0.5*(cm[corrkey][i,j] + cm[corrkey][j,i])
                 if args.Normalize:  outvalue /= cm[corrkey][0,0]
                 fp.write('{:3d} {:3d} {:14.6e}\n'.format(i,j,outvalue))
             fp.write('\n')

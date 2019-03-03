@@ -116,9 +116,9 @@ class SisterCellData(object):
             # estimate a threshold from the data between the two peaks in the bimodal distribution with Otsu's method, then get indices of these transitions
             index_div = np.where(diffdata < self.otsu(alldiffdata))[0].flatten()
             
-            
-            dj = sum(np.where(np.diff(index_div) == 1)[0].flatten())
+            # 'double jump': division spans two (or more) time points
             # todo: need to implement some lines of code that detect if a division spans multiple time points, and corrects the algorithm below properly
+            dj = sum(np.where(np.diff(index_div) == 1)[0].flatten())
             
             # timepoint of division is assumed to be the average before and after the drop in signal
             time_div  = 0.5 * np.array(self.__data[dataID]['time' + ks][index_div + 1]) + 0.5 * np.array(self.__data[dataID]['time'+ks][index_div])
@@ -130,14 +130,15 @@ class SisterCellData(object):
             #  * size at division
             #  * Least Mean Squares Estimator for the (exponential) growth rate over the full division cycle
             ret_ks = dict()
-            ret_ks['generationtime' + ks]          = np.diff(time_div)
-            ret_ks[discretize_by + '_birth' + ks]  = np.array(self.__data[dataID][discretize_by + ks][index_div+1])[:-1]
-            ret_ks[discretize_by + '_final' + ks]  = np.array(self.__data[dataID][discretize_by + ks][index_div])[1:]
-            ret_ks['growth_' + discretize_by + ks] = np.array([
-                            self.LMSQ(
-                                self.__data[dataID][discretize_by + ks][index_div[i]+1:index_div[i+1]+1],           # x-values
+            ret_ks['generationtime' + ks]          = np.concatenate([[self.__data[dataID]['time' + ks][index_div[0]] - 0.5 * self.__data[dataID]['time' + ks][0]],np.diff(time_div)])
+            ret_ks[discretize_by + '_birth' + ks]  = np.concatenate([[self.__data[dataID][discretize_by + ks][0]],np.array(self.__data[dataID][discretize_by + ks][index_div+1])[:-1]])
+            ret_ks[discretize_by + '_final' + ks]  = np.array(self.__data[dataID][discretize_by + ks][index_div])
+            ret_ks['growth_' + discretize_by + ks] = np.concatenate([
+                            [self.LMSQ(self.__data[dataID]['time' + ks][:index_div[0]],np.log(self.__data[dataID][discretize_by + ks][:index_div[0]]),cov=False)[1]], # first generation
+                            np.array([self.LMSQ(
+                                self.__data[dataID]['time' + ks][index_div[i]+1:index_div[i+1]+1],                  # x-values
                                 np.log(self.__data[dataID][discretize_by + ks][index_div[i]+1:index_div[i+1]+1]),   # y-values
-                                cov=False)[1] for i in range(len(index_div)-1)])
+                                cov=False)[1] for i in range(len(index_div)-1)])])
             
             # we have everything, now make a dataframe
             ret.append(pd.DataFrame(ret_ks))
