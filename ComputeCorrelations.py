@@ -20,6 +20,7 @@ def main():
     parser_alg.add_argument("-m","--MaxLag",        default = 10,           type = int)
     parser_alg.add_argument("-S","--Symmetrize",    default = False,        action = "store_true")
     parser_alg.add_argument("-N","--Normalize",     default = False,        action = "store_true")
+    parser_alg.add_argument("-V","--NormVariance",  default = False,        action = "store_true")
     args = parser.parse_args()
 
 
@@ -30,6 +31,10 @@ def main():
     corrmatrix_sumB    = dict()
     corrmatrix_count   = dict()
     
+    overall_sumAB = 0.
+    overall_sumA  = 0.
+    overall_sumB  = 0.
+    overall_count = 0.
     
     for dataID,fn,x in data:
         if args.verbose: print(dataID,fn)
@@ -39,17 +44,26 @@ def main():
         for corrkey in trajA.keys():
             if not corrkey in corrmatrix_sumAB.keys():
                 corrmatrix_sumAB[corrkey] = np.zeros((args.MaxLag,args.MaxLag),dtype=np.float)
-                corrmatrix_sumA[corrkey]  = np.zeros((args.MaxLag,args.MaxLag),dtype=np.float)
-                corrmatrix_sumB[corrkey]  = np.zeros((args.MaxLag,args.MaxLag),dtype=np.float)
+                corrmatrix_sumA [corrkey] = np.zeros((args.MaxLag,args.MaxLag),dtype=np.float)
+                corrmatrix_sumB [corrkey] = np.zeros((args.MaxLag,args.MaxLag),dtype=np.float)
                 corrmatrix_count[corrkey] = np.zeros((args.MaxLag,args.MaxLag),dtype=np.float)
         
             for i in range(min(args.MaxLag,len(trajA))):
                 for j in range(min(args.MaxLag,len(trajB))):
-                    corrmatrix_sumAB[corrkey][i,j]   += trajA[corrkey][i] * trajB[corrkey][j]
-                    corrmatrix_sumA[corrkey][i,j]    += trajA[corrkey][i]
-                    corrmatrix_sumB[corrkey][i,j]    += trajB[corrkey][j]
-                    corrmatrix_count[corrkey][i,j]   += 1
+                    corrmatrix_sumAB[corrkey][i,j] += trajA[corrkey][i] * trajB[corrkey][j]
+                    corrmatrix_sumA [corrkey][i,j] += trajA[corrkey][i]
+                    corrmatrix_sumB [corrkey][i,j] += trajB[corrkey][j]
+                    corrmatrix_count[corrkey][i,j] += 1
+                    
+                    overall_sumAB += trajA[corrkey][i] * trajB[corrkey][j]
+                    overall_sumA  += trajA[corrkey][i]
+                    overall_sumB  += trajB[corrkey][j]
+                    overall_count += 1.
+                    
                 
+
+    if args.NormVariance:
+        var = (overall_sumAB - overall_sumA * overall_sumB / overall_count) / overall_count
 
     # compute correlation & output
     cm = dict()
@@ -60,8 +74,9 @@ def main():
         for i in range(np.shape(cm[corrkey])[0]):
             for j in range(np.shape(cm[corrkey])[1]):
                 outvalue = cm[corrkey][i,j]
-                if args.Symmetrize: outvalue  = 0.5*(cm[corrkey][i,j] + cm[corrkey][j,i])
-                if args.Normalize:  outvalue /= cm[corrkey][0,0]
+                if args.Symmetrize:     outvalue  = 0.5*(cm[corrkey][i,j] + cm[corrkey][j,i])
+                if args.Normalize:      outvalue /= cm[corrkey][0,0]
+                elif args.NormVariance: outvalue /= var
                 fp.write('{:3d} {:3d} {:14.6e}\n'.format(i+1,j+1,outvalue)) # add 1, since first data point is first (!) generation of sisters
             fp.write('\n')
         fp.close()
