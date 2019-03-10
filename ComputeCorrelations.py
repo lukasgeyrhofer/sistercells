@@ -13,8 +13,8 @@ def main():
     parser_io = parser.add_argument_group(description = "==== I/O parameters ====")
     parser_io.add_argument("-i", "--infiles",             default = [],           nargs = "*")
     parser_io.add_argument("-o", "--OutFilePrefix",       default = 'corrmatrix', type = str)
-    parser_io.add_argument("-v", "--verbose",             default = False,        action = "store_true")
     parser_io.add_argument("-A", "--ACFFilePrefix",       default = None,         type = str)
+    parser_io.add_argument("-v", "--verbose",             default = False,        action = "store_true")
     
     parser_alg = parser.add_argument_group(description = "==== Algorithm parameters ====")
     parser_alg.add_argument("-k","--DiscretizeKey",       default = 'length',     type = str)
@@ -43,7 +43,7 @@ def main():
         acf_count = dict()
     
     for dataID,fn,x in data:
-        if args.verbose: print(dataID,fn)
+        if args.verbose: print('{:4d} \033[91m{:s}\033[0m'.format(dataID,fn))
         
         trajA,trajB = data.CellDivisionTrajectory(dataID, discretize_by = args.DiscretizeKey)
 
@@ -92,6 +92,7 @@ def main():
 
     # compute correlation & output
     cm = dict()
+    acf = dict()
     for corrkey in corrmatrix_sumAB.keys():
         cm[corrkey] = (corrmatrix_sumAB[corrkey] - corrmatrix_sumA[corrkey] * corrmatrix_sumB[corrkey] / corrmatrix_count[corrkey])/corrmatrix_count[corrkey]
 
@@ -107,13 +108,13 @@ def main():
         fp.close()
         
         if not args.ACFFilePrefix is None:
-            acf = acf_sumAB[corrkey]/acf_count[corrkey] - acf_sumA[corrkey]**2/acf_count[corrkey]**2
+            acf[corrkey] = (acf_sumAB[corrkey] - acf_sumA[corrkey] * acf_sumA[corrkey] / acf_count[corrkey])/acf_count[corrkey]
             norm = 1.
-            if args.Normalize: norm = 1./acf[0]
-            acf *= norm
+            if args.Normalize: norm = 1./acf[corrkey][0]
+            acf[corrkey] *= norm
             fp = open(args.ACFFilePrefix + '_' + corrkey,'w')
             for i in range(len(acf_sumAB[corrkey])):
-                fp.write('{:3d} {:14.6e}\n'.format(i,acf[j]))
+                fp.write('{:3d} {:14.6e}\n'.format(i,acf[corrkey][i]))
             fp.close()
 
 if __name__ == "__main__":
