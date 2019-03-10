@@ -11,16 +11,17 @@ import sistercellclass as ssc
 def main():
     parser = argparse.ArgumentParser()
     parser_io = parser.add_argument_group(description = "==== I/O parameters ====")
-    parser_io.add_argument("-i", "--infiles",       default = [],           nargs = "*")
-    parser_io.add_argument("-o", "--OutFilePrefix", default = 'corrmatrix', type = str)
-    parser_io.add_argument("-v", "--verbose",       default = False,        action = "store_true")
+    parser_io.add_argument("-i", "--infiles",             default = [],           nargs = "*")
+    parser_io.add_argument("-o", "--OutFilePrefix",       default = 'corrmatrix', type = str)
+    parser_io.add_argument("-v", "--verbose",             default = False,        action = "store_true")
+    parser_io.add_argument("-A", "--ACFFilePrefix",       default = None,         type = str)
     
     parser_alg = parser.add_argument_group(description = "==== Algorithm parameters ====")
-    parser_alg.add_argument("-k","--DiscretizeKey", default = 'length',     type = str)
-    parser_alg.add_argument("-m","--MaxLag",        default = 10,           type = int)
-    parser_alg.add_argument("-S","--Symmetrize",    default = False,        action = "store_true")
-    parser_alg.add_argument("-N","--Normalize",     default = False,        action = "store_true")
-    parser_alg.add_argument("-V","--NormVariance",  default = False,        action = "store_true")
+    parser_alg.add_argument("-k","--DiscretizeKey",       default = 'length',     type = str)
+    parser_alg.add_argument("-m","--MaxLag",              default = 10,           type = int)
+    parser_alg.add_argument("-S","--Symmetrize",          default = False,        action = "store_true")
+    parser_alg.add_argument("-N","--Normalize",           default = False,        action = "store_true")
+    parser_alg.add_argument("-V","--NormVariance",        default = False,        action = "store_true")
     args = parser.parse_args()
 
 
@@ -36,6 +37,11 @@ def main():
     overall_sumB  = 0.
     overall_count = 0.
     
+    if not args.ACFFilePrefix is None:
+        acf_sumAB = dict()
+        acf_sumA  = dict()
+        acf_count = dict()
+    
     for dataID,fn,x in data:
         if args.verbose: print(dataID,fn)
         
@@ -47,6 +53,10 @@ def main():
                 corrmatrix_sumA [corrkey] = np.zeros((args.MaxLag,args.MaxLag),dtype=np.float)
                 corrmatrix_sumB [corrkey] = np.zeros((args.MaxLag,args.MaxLag),dtype=np.float)
                 corrmatrix_count[corrkey] = np.zeros((args.MaxLag,args.MaxLag),dtype=np.float)
+                
+                acf_sumAB[corrkey] = np.zeros(args.MaxLag + 1,dtype=np.float)
+                acf_sumA [corrkey] = np.zeros(args.MaxLag + 1,dtype=np.float)
+                acf_count[corrkey] = np.zeros(args.MaxLag + 1,dtype=np.float)
         
             for i in range(min(args.MaxLag,len(trajA))):
                 for j in range(min(args.MaxLag,len(trajB))):
@@ -59,7 +69,22 @@ def main():
                     overall_sumA  += trajA[corrkey][i]
                     overall_sumB  += trajB[corrkey][j]
                     overall_count += 1.
-                    
+            
+            if not args.ACFFilePrefix is None:
+                for i in range(len(trajA)):
+                    for j in range(np.min([args.MaxLag + 1,len(trajA) - i])):
+                        acf_sumAB[corrkey][j] += trajA[corrkey][i] * trajA[corrkey][i+j]
+                        acf_sumA[corrkey][j]  += trajA[corrkey][i]
+                        acf_count[corrkey][j] += 1
+                for i in range(len(trajB)):
+                    for j in range(np.min([args.MaxLag + 1,len(trajB) - i])):
+                        acf_sumAB[corrkey][j] += trajB[corrkey][i] * trajB[corrkey][i+j]
+                        acf_sumA[corrkey][j]  += trajB[corrkey][i]
+                        acf_count[corrkey][j] += 1
+                        
+                            
+        
+        
                 
 
     if args.NormVariance:
@@ -81,7 +106,15 @@ def main():
             fp.write('\n')
         fp.close()
         
-
+        if not args.ACFFilePrefix is None:
+            acf = acf_sumAB[corrkey]/acf_count[corrkey] - acf_sumA[corrkey]**2/acf_count[corrkey]**2
+            norm = 1.
+            if args.Normalize: norm = 1./acf[0]
+            acf *= norm
+            fp = open(args.ACFFilePrefix + '_' + corrkey,'w')
+            for i in range(len(acf_sumAB[corrkey])):
+                fp.write('{:3d} {:14.6e}\n'.format(i,acf[j]))
+            fp.close()
 
 if __name__ == "__main__":
     main()
