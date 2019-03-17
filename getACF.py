@@ -31,24 +31,22 @@ def main():
         traj = data.CellDivisionTrajectory(dataID, discretize_by = args.DiscretizeKey)
         
         for a in range(2):
-            for k in data.keylist_stripped:
-                trajlen = np.max([args.maxtime,len(traj[a][k])])
+            for k in traj[a].keys():
                 if not k in acf_AB.keys():
                     acf_AB[k]      = np.array([],dtype=np.float)
                     acf_ABcount[k] = np.array([],dtype=np.float)
                     
-                    acf_A[k]       = np.array([],dtype=np.float)
-                    acf_Acount[k]  = np.array([],dtype=np.float)
+                    acf_A[k]       = 0.
+                    acf_Acount[k]  = 0.
 
-                for i in range(trajlen):
-                    if len(acf_A[k]) > i:
-                        acf_A[k]      = np.concatenate([acf_A[k],      np.zeros(1)])
-                        acf_Acount[k] = np.concatenate([acf_Acount[k], np.zeros(1)])
-                    acf_A[k][i]      += traj[a][k][i]
-                    acf_Acount[k][i] += 1.
-                    
-                    for j in range(trajlen - i):
-                        if len(acf_AB[k]) > j:
+                acf_A[k] += np.sum(traj[a][k])
+                acf_Acount[k] += len(traj[a][k])
+
+                for i in range(len(traj[a][k])):
+                    maxj = len(traj[a][k]) - i
+                    if not args.maxtime is None: maxj = np.min([maxj,args.maxtime + 1])
+                    for j in range(maxj):
+                        if len(acf_AB[k]) <= j:
                             acf_AB[k]      = np.concatenate([acf_AB[k],      np.zeros(1)])
                             acf_ABcount[k] = np.concatenate([acf_ABcount[k], np.zeros(1)])
                         acf_AB[k][j]      += traj[a][k][i] * traj[a][k][i+j]
@@ -56,14 +54,10 @@ def main():
                 
         
     for k in acf_AB.keys():
-        assert len(acf_AB) == len(acf_A)
-        
         tmpacf = acf_AB[k]/acf_ABcount[k] - (acf_A[k]/acf_Acount[k])**2
-        
-        if args.normalize:
-            tmpacf /= tmpacf[0]
-            
+        if args.normalize: tmpacf /= tmpacf[0]
         t = np.arange(len(tmpacf))
+        
         np.savetxt(args.outfileprefix + '_' + k.replace(' ','-'),np.array([t,tmpacf]).T)
 
 
