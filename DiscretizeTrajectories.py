@@ -7,7 +7,7 @@ import sys,math
 import sistercellclass as scc
 
 
-def autocorrelation (x) :
+def autocorrelation (x, normalize = False) :
     """
     Compute the autocorrelation of the signal, based on the properties of the
     power spectral density of the signal.
@@ -16,7 +16,9 @@ def autocorrelation (x) :
     f = np.fft.fft(xp)
     p = np.array([np.real(v)**2+np.imag(v)**2 for v in f])
     pi = np.fft.ifft(p)
-    return np.real(pi)[:x.size/2]/np.sum(xp**2)
+    inorm = 1.
+    if normalize: inorm = 1./np.sum(xp**2)
+    return np.real(pi)[:x.size/2] * inorm
 
 
 def main():
@@ -26,6 +28,7 @@ def main():
     parser.add_argument("-o","--outfileprefix",default="ACF",type=str)
     parser.add_argument("-m","--minlength",default=10,type=int)
     parser.add_argument("-S","--averageSisters",default=False,action="store_true")
+    parser.add_argument("-N","--Normalize",default=False,action="store_true")
     args = parser.parse_args()
     
     data = scc.SisterCellData(**vars(args))
@@ -41,7 +44,7 @@ def main():
                         k0 = k.rstrip('AB')
                     if not k0 in correlationfunctions.keys():
                         correlationfunctions[k0] = list()
-                    correlationfunctions[k0].append(autocorrelation(y[k]))
+                    correlationfunctions[k0].append(autocorrelation(y[k],args.Normalize))
                     
     for k in correlationfunctions.keys():
         maxL = np.max([len(a) for a in correlationfunctions[k]])

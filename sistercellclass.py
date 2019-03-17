@@ -8,7 +8,6 @@ class SisterCellData(object):
         self.__infiles    = kwargs.get('infiles',[])
         self.__debugmode  = kwargs.get('debugmode',False) # return only single trajectory in iteration
         self.__sisterdata = kwargs.get('sisterdata',True)
-        self.__discretize_bins = kwargs.get('DiscretizeBins',50)
         
         # lists to store data internally
         self.__data = list()

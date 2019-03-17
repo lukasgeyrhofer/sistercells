@@ -29,9 +29,9 @@ def main():
         dA = np.diff(x[args.key + 'A'])
         dB = np.diff(x[args.key + 'B'])
         axes[dID,0].hist(dA,log=True,bins=50)
-        axes[dID,0].axvline(x = data.otsu(dA,bins=50),c='red')
+        axes[dID,0].axvline(x = data.otsu(dA),c='red')
         axes[dID,1].hist(dB,log=True,bins=50)
-        axes[dID,1].axvline(x = data.otsu(dB,bins=50),c='red')
+        axes[dID,1].axvline(x = data.otsu(dB),c='red')
         
     fig.savefig(args.outfile + '.svg')
 

@@ -74,12 +74,12 @@ def main():
                 for i in range(len(trajA)):
                     for j in range(np.min([args.MaxLag + 1,len(trajA) - i])):
                         acf_sumAB[corrkey][j] += trajA[corrkey][i] * trajA[corrkey][i+j]
-                        acf_sumA[corrkey][j]  += trajA[corrkey][i]
+                        acf_sumA [corrkey][j] += trajA[corrkey][i]
                         acf_count[corrkey][j] += 1
                 for i in range(len(trajB)):
                     for j in range(np.min([args.MaxLag + 1,len(trajB) - i])):
                         acf_sumAB[corrkey][j] += trajB[corrkey][i] * trajB[corrkey][i+j]
-                        acf_sumA[corrkey][j]  += trajB[corrkey][i]
+                        acf_sumA [corrkey][j] += trajB[corrkey][i]
                         acf_count[corrkey][j] += 1
                         
                             
