@@ -145,7 +145,7 @@ class SisterCellData(object):
         return ret
 
 
-    def autocorrelation (self, dataID, normalize = False) :
+    def autocorrelation (self, dataID, normalize = False, maxlen = None, enforcelen = False) :
         """
         Compute the autocorrelation of the signal, based on the properties of the
         power spectral density of the signal.
@@ -154,27 +154,53 @@ class SisterCellData(object):
 
         acfA = dict()
         for key in trajA.keys():
-            xp = trajA[key]-np.mean(trajA[key])
-            f = np.fft.fft(xp)
-            p = np.array([np.real(v)**2+np.imag(v)**2 for v in f])
-            pi = np.fft.ifft(p)
-            inorm = 1.
-            if normalize: inorm = 1./np.sum(xp**2)
-            acfA[key] = np.real(pi)[:x.size/2] * inorm
+            ml  = np.min([maxlen,len(trajA[key])])
+            xp  = trajA[key][:ml]-np.mean(trajA[key][:ml])
+            f   = np.fft.fft(xp)
+            p   = np.array([np.real(v)**2+np.imag(v)**2 for v in f])
+            pi  = np.fft.ifft(p)
+            acf = np.real(pi)[:ml/2]
+            if normalize: acf *= 1./np.sum(xp**2)
+            if enforcelen and not maxlen is None:
+                if len(acf) < maxlen:
+                    acf = np.concatenate([acf,np.zeros(maxlen - len(acf))])
+            acfA[key] = acf
 
-        acfB = dict()
         for key in trajB.keys():
-            xp = trajB[key]-np.mean(trajB[key])
-            f = np.fft.fft(xp)
-            p = np.array([np.real(v)**2+np.imag(v)**2 for v in f])
-            pi = np.fft.ifft(p)
-            inorm = 1.
-            if normalize: inorm = 1./np.sum(xp**2)
-            acfB[key] = np.real(pi)[:x.size/2] * inorm
-        
+            ml  = np.min([maxlen,len(trajB[key])])
+            xp  = trajB[key][:ml]-np.mean(trajB[key][:ml])
+            f   = np.fft.fft(xp)
+            p   = np.array([np.real(v)**2+np.imag(v)**2 for v in f])
+            pi  = np.fft.ifft(p)
+            acf = np.real(pi)[:ml/2]
+            if normalize: acf *= 1./np.sum(xp**2)
+            if enforcelen and not maxlen is None:
+                if len(acf) < maxlen:
+                    acf = np.concatenate([acf,np.zeros(maxlen - len(acf))])
+            acfB[key] = acf
+            
         return acfA,acfB
 
 
+    def lineagecorrelation(self, dataID, maxlen = 20):
+        trajA,trajB = data.CellDivisionTrajectory(dataID)
+
+        for corrkey in trajA.keys():
+            if not corrkey in corrmatrix_sumAB.keys():
+                corrmatrix_sumAB[corrkey] = np.zeros((maxlen,maxlen),dtype=np.float)
+                corrmatrix_sumA [corrkey] = np.zeros((maxlen,maxlen),dtype=np.float)
+                corrmatrix_sumB [corrkey] = np.zeros((maxlen,maxlen),dtype=np.float)
+                corrmatrix_count[corrkey] = np.zeros((maxlen,maxlen),dtype=np.float)
+                
+            for i in range(min(maxlen,len(trajA))):
+                for j in range(min(args.MaxLag,len(trajB))):
+                    corrmatrix_sumAB[corrkey][i,j] += trajA[corrkey][i] * trajB[corrkey][j]
+                    corrmatrix_sumA [corrkey][i,j] += trajA[corrkey][i]
+                    corrmatrix_sumB [corrkey][i,j] += trajB[corrkey][j]
+                    corrmatrix_count[corrkey][i,j] += 1
+                    
+        return corrmatrix_sumAB, corrmatrix_sumA, corrmatrix_sumB, corrmatrix_count
+    
 
     # access single dataframe by its ID
     def __getitem__(self,key):
