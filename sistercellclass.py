@@ -145,6 +145,37 @@ class SisterCellData(object):
         return ret
 
 
+    def autocorrelation (self, dataID, normalize = False) :
+        """
+        Compute the autocorrelation of the signal, based on the properties of the
+        power spectral density of the signal.
+        """
+        trajA, trajB = self.CellDivisionTrajectory(dataID)
+
+        acfA = dict()
+        for key in trajA.keys():
+            xp = trajA[key]-np.mean(trajA[key])
+            f = np.fft.fft(xp)
+            p = np.array([np.real(v)**2+np.imag(v)**2 for v in f])
+            pi = np.fft.ifft(p)
+            inorm = 1.
+            if normalize: inorm = 1./np.sum(xp**2)
+            acfA[key] = np.real(pi)[:x.size/2] * inorm
+
+        acfB = dict()
+        for key in trajB.keys():
+            xp = trajB[key]-np.mean(trajB[key])
+            f = np.fft.fft(xp)
+            p = np.array([np.real(v)**2+np.imag(v)**2 for v in f])
+            pi = np.fft.ifft(p)
+            inorm = 1.
+            if normalize: inorm = 1./np.sum(xp**2)
+            acfB[key] = np.real(pi)[:x.size/2] * inorm
+        
+        return acfA,acfB
+
+
+
     # access single dataframe by its ID
     def __getitem__(self,key):
         return self.__data[key]
