@@ -26,6 +26,7 @@ def main():
 
 
     data = ssc.SisterCellData(**vars(args))
+    print(data)
 
     corrmatrix_sumAB   = dict()
     corrmatrix_sumA    = dict()
@@ -42,34 +43,24 @@ def main():
         acf_sumA  = dict()
         acf_count = dict()
     
-    for dataID,fn,x in data:
-        if args.verbose: print('{:4d} \033[91m{:s}\033[0m'.format(dataID,fn))
+    
+    for dataID in range(len(data)):
+        if args.verbose: print('{:4d} \033[91m{:s}\033[0m'.format(dataID))
         
-        trajA,trajB = data.CellDivisionTrajectory(dataID, discretize_by = args.DiscretizeKey)
+        cmAB,cmA,cmB,cmcount = data.lineagecorrelation(dataID, maxlen = args.MaxLag)
+        
+        for key in cmAB.keys():
+            if not key in corrmatrix_sumAB.keys():
+                corrmatrix_sumAB[key]  = cmAB[key]
+                corrmatrix_sumA [key]  = cmA[key]
+                corrmatrix_sumB [key]  = cmB[key]
+                corrmatrix_count[key]  = cmcount
+            else:
+                corrmatrix_sumAB[key] += cmAB[key]
+                corrmatrix_sumA [key] += cmA[key]
+                corrmatrix_sumB [key] += cmB[key]
+                corrmatrix_count[key] += cmcount
 
-        for corrkey in trajA.keys():
-            if not corrkey in corrmatrix_sumAB.keys():
-                corrmatrix_sumAB[corrkey] = np.zeros((args.MaxLag,args.MaxLag),dtype=np.float)
-                corrmatrix_sumA [corrkey] = np.zeros((args.MaxLag,args.MaxLag),dtype=np.float)
-                corrmatrix_sumB [corrkey] = np.zeros((args.MaxLag,args.MaxLag),dtype=np.float)
-                corrmatrix_count[corrkey] = np.zeros((args.MaxLag,args.MaxLag),dtype=np.float)
-                
-                acf_sumAB[corrkey] = np.zeros(args.MaxLag + 1,dtype=np.float)
-                acf_sumA [corrkey] = np.zeros(args.MaxLag + 1,dtype=np.float)
-                acf_count[corrkey] = np.zeros(args.MaxLag + 1,dtype=np.float)
-        
-            for i in range(min(args.MaxLag,len(trajA))):
-                for j in range(min(args.MaxLag,len(trajB))):
-                    corrmatrix_sumAB[corrkey][i,j] += trajA[corrkey][i] * trajB[corrkey][j]
-                    corrmatrix_sumA [corrkey][i,j] += trajA[corrkey][i]
-                    corrmatrix_sumB [corrkey][i,j] += trajB[corrkey][j]
-                    corrmatrix_count[corrkey][i,j] += 1
-                    
-                    overall_sumAB += trajA[corrkey][i] * trajB[corrkey][j]
-                    overall_sumA  += trajA[corrkey][i]
-                    overall_sumB  += trajB[corrkey][j]
-                    overall_count += 1.
-            
             if not args.ACFFilePrefix is None:
                 for i in range(len(trajA)):
                     for j in range(np.min([args.MaxLag + 1,len(trajA) - i])):

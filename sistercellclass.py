@@ -183,21 +183,27 @@ class SisterCellData(object):
 
 
     def lineagecorrelation(self, dataID, maxlen = 20):
-        trajA,trajB = data.CellDivisionTrajectory(dataID)
-
+        
+        trajA,trajB = self.CellDivisionTrajectory(dataID)
+        corrmatrix_sumAB = dict()
+        corrmatrix_sumA  = dict()
+        corrmatrix_sumB  = dict()
+        corrmatrix_count = dict()
+        
         for corrkey in trajA.keys():
             if not corrkey in corrmatrix_sumAB.keys():
                 corrmatrix_sumAB[corrkey] = np.zeros((maxlen,maxlen),dtype=np.float)
                 corrmatrix_sumA [corrkey] = np.zeros((maxlen,maxlen),dtype=np.float)
                 corrmatrix_sumB [corrkey] = np.zeros((maxlen,maxlen),dtype=np.float)
                 corrmatrix_count[corrkey] = np.zeros((maxlen,maxlen),dtype=np.float)
-                
-            for i in range(min(maxlen,len(trajA))):
-                for j in range(min(args.MaxLag,len(trajB))):
-                    corrmatrix_sumAB[corrkey][i,j] += trajA[corrkey][i] * trajB[corrkey][j]
-                    corrmatrix_sumA [corrkey][i,j] += trajA[corrkey][i]
-                    corrmatrix_sumB [corrkey][i,j] += trajB[corrkey][j]
-                    corrmatrix_count[corrkey][i,j] += 1
+        
+            mlA = min(maxlen,len(trajA))
+            mlB = min(maxlen,len(trajB))
+            
+            corrmatrix_sumAB[corrkey][:mlA,:mlB] += np.outer(    trajA[corrkey][:mlA], trajB[corrkey][:mlB] )
+            corrmatrix_sumA [corrkey][:mlA,:mlB] += np.repeat( [ trajA[corrkey][:mlA] ], mlB, axis = 0)
+            corrmatrix_sumB [corrkey][:mlA,:mlB] += np.repeat( [ trajB[corrkey][:mlB] ], mlA, axis = 0).T
+            corrmatrix_count[corrkey][:mlA,:mlB] += np.ones( (mlA, mlB) )
                     
         return corrmatrix_sumAB, corrmatrix_sumA, corrmatrix_sumB, corrmatrix_count
     
