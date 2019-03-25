@@ -21,7 +21,6 @@ def main():
     parser_alg.add_argument("-m","--MaxLag",              default = 10,           type = int)
     parser_alg.add_argument("-S","--Symmetrize",          default = False,        action = "store_true")
     parser_alg.add_argument("-N","--Normalize",           default = False,        action = "store_true")
-    parser_alg.add_argument("-V","--NormVariance",        default = False,        action = "store_true")
     args = parser.parse_args()
 
 
@@ -33,19 +32,15 @@ def main():
     corrmatrix_sumB    = dict()
     corrmatrix_count   = dict()
     
-    overall_sumAB = 0.
-    overall_sumA  = 0.
-    overall_sumB  = 0.
-    overall_count = 0.
-    
     if not args.ACFFilePrefix is None:
-        acf_sumAB = dict()
-        acf_sumA  = dict()
-        acf_count = dict()
+        acf_sumAA   = dict()
+        acf_sumA    = dict()
+        acf_countAA = dict()
+        acf_countA  = dict()
     
     
     for dataID in range(len(data)):
-        if args.verbose: print('{:4d} \033[91m{:s}\033[0m'.format(dataID))
+        if args.verbose: print('{:4d} \033[91m{:s}\033[0m'.format(dataID,data.filenames[dataID]))
         
         cmAB,cmA,cmB,cmcount = data.lineagecorrelation(dataID, maxlen = args.MaxLag)
         
@@ -54,32 +49,29 @@ def main():
                 corrmatrix_sumAB[key]  = cmAB[key]
                 corrmatrix_sumA [key]  = cmA[key]
                 corrmatrix_sumB [key]  = cmB[key]
-                corrmatrix_count[key]  = cmcount
+                corrmatrix_count[key]  = cmcount[key]
             else:
                 corrmatrix_sumAB[key] += cmAB[key]
                 corrmatrix_sumA [key] += cmA[key]
                 corrmatrix_sumB [key] += cmB[key]
-                corrmatrix_count[key] += cmcount
+                corrmatrix_count[key] += cmcount[key]
 
-            if not args.ACFFilePrefix is None:
-                for i in range(len(trajA)):
-                    for j in range(np.min([args.MaxLag + 1,len(trajA) - i])):
-                        acf_sumAB[corrkey][j] += trajA[corrkey][i] * trajA[corrkey][i+j]
-                        acf_sumA [corrkey][j] += trajA[corrkey][i]
-                        acf_count[corrkey][j] += 1
-                for i in range(len(trajB)):
-                    for j in range(np.min([args.MaxLag + 1,len(trajB) - i])):
-                        acf_sumAB[corrkey][j] += trajB[corrkey][i] * trajB[corrkey][i+j]
-                        acf_sumA [corrkey][j] += trajB[corrkey][i]
-                        acf_count[corrkey][j] += 1
-                        
-                            
-        
-        
+        if not args.ACFFilePrefix is None:
+            
+            acfAA, acfcAA, acfA, acfcA = data.autocorrelation_restricted(dataID, maxlen = args.MaxLag)
+            
+            for key in acfAA.keys():
+                if not key in acf_sumAA.keys():
+                    acf_sumAA  [corrkey] = np.zeros(args.MaxLag)
+                    acf_countAA[corrkey] = np.zeros(args.MaxLag)
+                    acf_sumA   [corrkey] = 0
+                    acf_countA [corrkey] = 0
+                    
+                acf_sumAA  [corrkey][:len(acfAA[corrkey])] += acfAA[corrkey]
+                acf_countAA[corrkey][:len(acfAA[corrkey])] += acfcAA[corrkey]
+                acf_sumA   [corrkey] += acfA[corrkey]
+                acf_countA [corrkey] += acfcA[corrkey]
                 
-
-    if args.NormVariance:
-        var = (overall_sumAB - overall_sumA * overall_sumB / overall_count) / overall_count
 
     # compute correlation & output
     cm = dict()
@@ -93,20 +85,14 @@ def main():
                 outvalue = cm[corrkey][i,j]
                 if args.Symmetrize:     outvalue  = 0.5*(cm[corrkey][i,j] + cm[corrkey][j,i])
                 if args.Normalize:      outvalue /= cm[corrkey][0,0]
-                elif args.NormVariance: outvalue /= var
                 fp.write('{:3d} {:3d} {:14.6e}\n'.format(i+1,j+1,outvalue)) # add 1, since first data point is first (!) generation of sisters
             fp.write('\n')
         fp.close()
         
         if not args.ACFFilePrefix is None:
-            acf[corrkey] = (acf_sumAB[corrkey] - acf_sumA[corrkey] * acf_sumA[corrkey] / acf_count[corrkey])/acf_count[corrkey]
-            norm = 1.
-            if args.Normalize: norm = 1./acf[corrkey][0]
-            acf[corrkey] *= norm
-            fp = open(args.ACFFilePrefix + '_' + corrkey,'w')
-            for i in range(len(acf_sumAB[corrkey])):
-                fp.write('{:3d} {:14.6e}\n'.format(i,acf[corrkey][i]))
-            fp.close()
+            acf[corrkey] = acf_sumAA[corrkey]/acf_countAA[corrkey] - acf_sumA[corrkey] * acf_sumA[corrkey] / ( acf_countA[corrkey] * acf_countA[corrkey] )
+            if args.Normalize: acf[corrkey] = 1./acf[corrkey][0]
+            np.savetxt(args.ACFFilePrefix + '_' + corrkey,np.array([np.arange(len(acf[corrkey])),acf[corrkey]]).T)
 
 if __name__ == "__main__":
     main()

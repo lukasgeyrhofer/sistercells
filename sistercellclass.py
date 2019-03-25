@@ -145,7 +145,7 @@ class SisterCellData(object):
         return ret
 
 
-    def autocorrelation (self, dataID, normalize = False, maxlen = None, enforcelen = False) :
+    def autocorrelation_FFT(self, dataID, normalize = False, maxlen = None, enforcelen = False) :
         """
         Compute the autocorrelation of the signal, based on the properties of the
         power spectral density of the signal.
@@ -182,6 +182,44 @@ class SisterCellData(object):
         return acfA,acfB
 
 
+    def autocorrelation_restricted(self, dataID, maxlen = 20):
+        """
+        Compute autocorrelation on same set of data as the lineagecorrelation below
+        (only use first 'maxlen' steps of discretized trajectory)
+        """
+        
+        trajA, trajB = self.CellDivisionTrajectory(dataID)
+        
+        acf_sumAA   = dict()
+        acf_sumA    = dict()
+        acf_countAA = dict()
+        acf_countA  = dict()
+        
+        for corrkey in trajA.keys():
+            if not corrkey in acf_sumAA.keys():
+                acf_sumAA  [corrkey] = np.zeros(maxlen, dtype = np.float)
+                acf_countAA[corrkey] = np.zeros(maxlen, dtype = np.float)
+                acf_sumA   [corrkey] = 0
+                acf_countA [corrkey] = 0
+            
+            mlA = min(maxlen, len(trajA))
+            mlB = min(maxlen, len(trajB))
+
+            acf_sumA[corrkey]          += np.sum(trajA[corrkey][:mlA])
+            acf_countA[corrkey]        += mlA
+            
+            acf_sumA[corrkey]          += np.sum(trajB[corrkey][:mlB])
+            acf_countA[corrkey]        += mlB
+            
+            acf_sumAA[corrkey][:mlA]   += trajA[corrkey][0] * trajA[corrkey][:mlA]
+            acf_countAA[corrkey][:mlA] += np.ones(mlA)
+            
+            acf_sumAA[corrkey][:mlB]   += trajB[corrkey][0] * trajB[corrkey][:mlB]
+            acf_countAA[corrkey][:mlB] += np.ones(mlB)
+            
+        return acf_sumAA, acf_countAA, acf_sumA, acf_countA
+
+
     def lineagecorrelation(self, dataID, maxlen = 20):
         
         trajA,trajB = self.CellDivisionTrajectory(dataID)
@@ -192,17 +230,17 @@ class SisterCellData(object):
         
         for corrkey in trajA.keys():
             if not corrkey in corrmatrix_sumAB.keys():
-                corrmatrix_sumAB[corrkey] = np.zeros((maxlen,maxlen),dtype=np.float)
-                corrmatrix_sumA [corrkey] = np.zeros((maxlen,maxlen),dtype=np.float)
-                corrmatrix_sumB [corrkey] = np.zeros((maxlen,maxlen),dtype=np.float)
-                corrmatrix_count[corrkey] = np.zeros((maxlen,maxlen),dtype=np.float)
+                corrmatrix_sumAB[corrkey] = np.zeros((maxlen,maxlen), dtype = np.float)
+                corrmatrix_sumA [corrkey] = np.zeros((maxlen,maxlen), dtype = np.float)
+                corrmatrix_sumB [corrkey] = np.zeros((maxlen,maxlen), dtype = np.float)
+                corrmatrix_count[corrkey] = np.zeros((maxlen,maxlen), dtype = np.float)
         
-            mlA = min(maxlen,len(trajA))
-            mlB = min(maxlen,len(trajB))
+            mlA = min(maxlen, len(trajA))
+            mlB = min(maxlen, len(trajB))
             
             corrmatrix_sumAB[corrkey][:mlA,:mlB] += np.outer(    trajA[corrkey][:mlA], trajB[corrkey][:mlB] )
-            corrmatrix_sumA [corrkey][:mlA,:mlB] += np.repeat( [ trajA[corrkey][:mlA] ], mlB, axis = 0)
-            corrmatrix_sumB [corrkey][:mlA,:mlB] += np.repeat( [ trajB[corrkey][:mlB] ], mlA, axis = 0).T
+            corrmatrix_sumB [corrkey][:mlA,:mlB] += np.repeat( [ trajB[corrkey][:mlB] ], mlA, axis = 0)
+            corrmatrix_sumA [corrkey][:mlA,:mlB] += np.repeat( [ trajA[corrkey][:mlA] ], mlB, axis = 0).T
             corrmatrix_count[corrkey][:mlA,:mlB] += np.ones( (mlA, mlB) )
                     
         return corrmatrix_sumAB, corrmatrix_sumA, corrmatrix_sumB, corrmatrix_count
