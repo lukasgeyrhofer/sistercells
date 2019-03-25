@@ -91,7 +91,7 @@ class SisterCellData(object):
 
 
 
-    def CellDivisionTrajectory(self,dataID, discretize_by = 'length', sisterdata = None):
+    def CellDivisionTrajectory(self,dataID, discretize_by = 'length', sisterdata = None, additional_columns = []):
         
         if not discretize_by in self.keylist_stripped:  raise KeyError('key not found')
         # not sure if this is needed
@@ -139,6 +139,14 @@ class SisterCellData(object):
                                 self.__data[dataID]['time' + ks][index_div[i]+1:index_div[i+1]+1],                  # x-values
                                 np.log(self.__data[dataID][discretize_by + ks][index_div[i]+1:index_div[i+1]+1]),   # y-values
                                 cov=False)[1] for i in range(len(index_div)-1)])])
+            
+            # if additional data is requested, return values from birth and division
+            if len(additional_columns) > 0:
+                for ac in additional_columns:
+                    if ac in self.keylist_stripped:
+                        ret_ks[ac + '_birth'] = np.concatenate([[self.__data[dataID][ac + ks][0]],np.array(self.__data[dataID][ac + ks][index_div+1])[:-1]])
+                        ret_ks[ac + '_final'] = np.array(self.__data[dataID][ac + ks][index_div])
+            
             
             # we have everything, now make a dataframe
             ret.append(pd.DataFrame(ret_ks))
