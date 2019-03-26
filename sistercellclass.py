@@ -34,18 +34,24 @@ class SisterCellData(object):
 
 
     def LMSQ(self,x,y,cov = True):
-        # least mean squares estimator
-        # for a linear interpolation, including covariance matrix for the estimated parameters
-        # A = ( 1  ... 1  )
-        #     ( x1 ... xn )
-        #
-        # y = ( y1 ... yn ).T
-        #
-        # p = (a b).T
-        #
-        # E[p]     = inv(A.T * A) * A.T * y
-        # Cov[p,p] = sigma2 * inv(A.T * A)
-        # sigma2   = E[ ( y - A*E[p] )^2 ]
+        """
+        Least Mean Squares estimator
+        for a linear interpolation between x,y: y ~ a + b x
+        Returns also covariance matrix for the estimated parameters a,b if 'cov' is True
+        
+        Algorithm:
+        A = ( 1  ... 1  )
+            ( x1 ... xn )
+            
+        y = ( y1 ... yn ).T
+        
+        p = (a b).T
+        
+        E[p]     = inv(A.T * A) * A.T * y
+        Cov[p,p] = sigma2 * inv(A.T * A)
+        sigma2   = E[ ( y - A*E[p] )^2 ]
+        """
+        
         n   = len(x)
         sx  = np.sum(x)
         sy  = np.sum(y)
@@ -71,11 +77,12 @@ class SisterCellData(object):
 
 
     def otsu(self,x):
-        # otsu's method
-        # described in IEEE TRANSACTIONS ON SYSTEMS, MAN, AND CYBERNETICS (1979)
-        # usually used to binarize photos into black/white
-        # here modified to use bins with single entries for each measurement
-
+        """
+        Otsu's method
+        First described in IEEE TRANSACTIONS ON SYSTEMS, MAN, AND CYBERNETICS (1979)
+        Usually used to binarize photos into black/white
+        Here modified to use bins with single entries for each measurement
+        """
         sx = np.sort(x)
         lx = len(x)
 
@@ -92,7 +99,12 @@ class SisterCellData(object):
 
 
     def CellDivisionTrajectory(self,dataID, discretize_by = 'length', sisterdata = None, additional_columns = []):
-        
+        """
+        Transform measured time series data into data for each generation:
+        (1) Find cell division events as a large enough drop in the measured value given by 'discretize_by'
+        (2) Compute various observables from these generations of cells
+        (3) Returns two pandas dataframes for each of the discretized trajectories
+        """
         if not discretize_by in self.keylist_stripped:  raise KeyError('key not found')
         # not sure if this is needed
         if sisterdata is None:  sisterdata = self.__sisterdata
@@ -228,8 +240,13 @@ class SisterCellData(object):
         return acf_sumAA, acf_countAA, acf_sumA, acf_countA
 
 
+
     def lineagecorrelation(self, dataID, maxlen = 20):
-        
+        """
+        Compute the correlation between the two lineages A and B of sistercells,
+        specifically <X(A,t) X(B,t)> - <X(A,t)> <X(B,t)>,
+        where X indicates the data in the discretized trajectory
+        """
         trajA,trajB = self.CellDivisionTrajectory(dataID)
         corrmatrix_sumAB = dict()
         corrmatrix_sumA  = dict()
