@@ -165,7 +165,7 @@ class SisterCellData(object):
         return ret
 
 
-    def autocorrelation_FFT(self, dataID, normalize = False, maxlen = None, enforcelen = False) :
+    def AutocorrelationFFT(self, dataID, normalize = False, maxlen = None, enforcelen = False) :
         """
         Compute the autocorrelation of the signal, based on the properties of the
         power spectral density of the signal.
@@ -202,7 +202,7 @@ class SisterCellData(object):
         return acfA,acfB
 
 
-    def autocorrelation_restricted(self, dataID, maxlen = 20):
+    def AutocorrelationRestricted(self, dataID, maxlen = 20):
         """
         Compute autocorrelation on same set of data as the lineagecorrelation below
         (only use first 'maxlen' steps of discretized trajectory)
@@ -241,7 +241,7 @@ class SisterCellData(object):
 
 
 
-    def lineagecorrelation(self, dataID, maxlen = 20):
+    def LineageCorrelation(self, dataID, maxlen = 20):
         """
         Compute the correlation between the two lineages A and B of sistercells,
         specifically <X(A,t) X(B,t)> - <X(A,t)> <X(B,t)>,
@@ -270,6 +270,21 @@ class SisterCellData(object):
                     
         return corrmatrix_sumAB, corrmatrix_sumA, corrmatrix_sumB, corrmatrix_count
     
+
+    def DivisionTimeDifferences(self,dataID):
+        """
+        compute the differences in division time points,
+        and how this difference progresses in the measurement
+        """
+        trajA, trajB = self.CellDivisionTrajectory(dataID)
+        trajlen = np.min([len(trajA['generationtime']), len(trajB['generationtime'])])
+
+        dt = np.zeros(trajlen)
+        for i in range(1,trajlen):
+            dt[i] = dt[i-1] + trajA['generationtime'][i] - trajB['generationtime'][i]
+        
+        return dt
+
 
     # access single dataframe by its ID
     def __getitem__(self,key):

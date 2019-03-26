@@ -15,6 +15,7 @@ def main():
     parser.add_argument("-D", "--DiscretizeKey", default = "length", type = str)
     parser.add_argument("-H", "--Histograms", default = False, action = "store_true")
     parser.add_argument("-b", "--bins", default=100,type=int)
+    parser.add_argument("-A", "--AdditionalDataColumns", type = str, default = [], nargs = "*")
     args = parser.parse_args()
     
     data = scc.SisterCellData(**vars(args))
@@ -23,9 +24,9 @@ def main():
         histodata = dict()
     
     for dataID,fn,x in data:
-        trajA,trajB = data.CellDivisionTrajectory(dataID, discretize_by = args.DiscretizeKey)
-        trajA.to_csv(os.path.basename(fn)[:-3] + args.outfilesuffix + 'A',sep = ' ',index_label='# generation')
-        trajB.to_csv(os.path.basename(fn)[:-3] + args.outfilesuffix + 'B',sep = ' ',index_label='# generation')
+        trajA,trajB = data.CellDivisionTrajectory(dataID, discretize_by = args.DiscretizeKey, additional_columns = args.AdditionalDataColumns)
+        trajA.to_csv(os.path.splitext(os.path.basename(fn))[0] + '.' + args.outfilesuffix + 'A',sep = ' ',index_label='# generation')
+        trajB.to_csv(os.path.splitext(os.path.basename(fn))[0] + '.' + args.outfilesuffix + 'B',sep = ' ',index_label='# generation')
         
         if args.Histograms:
             for k in trajA.keys():
