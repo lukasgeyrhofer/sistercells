@@ -286,6 +286,27 @@ class SisterCellData(object):
         return dt
 
 
+
+    # control: pair up trajectories randomly
+    def RandomTrajectories(self,count = 1, force_length = True):
+        for i in range(count):
+            tID = np.random.randint(len(self.__data), size = 2)
+            ab  = [chr(65+x) for x in np.random.randint(2, size = 2)]
+            keys0 = [k for k in self[tID[0]].keys() if k[-1] == ab[0]]
+            keys1 = [k for k in self[tID[1]].keys() if k[-1] == ab[1]]
+            
+            if force_length:
+                mlen  = min([len(self[tID[0]]),len(self[tID[1]])])
+                newdf = pd.concat([self[tID[0]][keys0][:mlen], self[tID[1]][keys1][:mlen]], axis = 1)
+            else:
+                newdf = pd.concat([self[tID[0]][keys0], self[tID[1]][keys1]], axis = 1)
+                
+            newdf.columns = np.concatenate([[k[:-1] + 'A' for k in keys0],[k[:-1] + 'B' for k in keys1]])
+            
+            yield newdf
+
+
+
     # access single dataframe by its ID
     def __getitem__(self,key):
         return self.__data[key]
