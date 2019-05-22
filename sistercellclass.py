@@ -288,20 +288,39 @@ class SisterCellData(object):
 
 
     # control: pair up trajectories randomly
-    def RandomTrajectories(self,count = 1, force_length = True):
+    def RandomTrajectories(self,count = 1, force_length = True, sync_time = True, min_length = None):
         for i in range(count):
-            tID = np.random.randint(len(self.__data), size = 2)
-            ab  = [chr(65+x) for x in np.random.randint(2, size = 2)]
-            keys0 = [k for k in self[tID[0]].keys() if k[-1] == ab[0]]
-            keys1 = [k for k in self[tID[1]].keys() if k[-1] == ab[1]]
-            
-            if force_length:
-                mlen  = min([len(self[tID[0]]),len(self[tID[1]])])
-                newdf = pd.concat([self[tID[0]][keys0][:mlen], self[tID[1]][keys1][:mlen]], axis = 1)
-            else:
-                newdf = pd.concat([self[tID[0]][keys0], self[tID[1]][keys1]], axis = 1)
+            have_pair = False
+            # sample until find suitable (=long enough) trajectories. careful, too large 'min_length' can lead to algorithm being stuck!
+            while not have_pair:
+                tID = np.random.randint(len(self.__data), size = 2)
+                ab  = [chr(65+x) for x in np.random.randint(2, size = 2)]
+                keys0 = [k for k in self[tID[0]].keys() if k[-1] == ab[0]]
+                keys1 = [k for k in self[tID[1]].keys() if k[-1] == ab[1]]
                 
-            newdf.columns = np.concatenate([[k[:-1] + 'A' for k in keys0],[k[:-1] + 'B' for k in keys1]])
+                startID = np.zeros(2,dtype=int)
+                if sync_time:
+                    dt = int( (self[tID[0]]['time' + ab[0]][0] - self[tID[1]]['time' + ab[1]][0]) / self.timestep )
+                    print(i,dt,self[tID[0]]['time' + ab[0]][0],self[tID[1]]['time' + ab[1]][0])
+                    if   dt < 0:    startID[0] = -dt
+                    elif dt > 0:    startID[1] = dt
+                
+                if force_length:
+                    mlen   = min([len(self[tID[0]][startID[0]:]),len(self[tID[1]][startID[0]:])])
+                    newdf0 = self[tID[0]].filter(items = keys0)[startID[0]:startID[0] + mlen].copy().reset_index(drop=True)
+                    newdf1 = self[tID[1]].filter(items = keys1)[startID[1]:startID[1] + mlen].copy().reset_index(drop=True)
+                    newdf  = pd.concat([newdf0,newdf1], axis = 'columns', ignore_index = True)
+                else:
+                    newdf0 = pd.DataFrame(self[tID[0]][keys0][startID[0]:]).copy().reset_index(drop=True)
+                    newdf1 = pd.DataFrame(self[tID[1]][keys1][startID[1]:]).copy().reset_index(drop=True)
+                    newdf  = pd.concat([newdf0,newdf1], axis = 'columns', ignore_index = True)
+                    
+                newdf.columns = np.concatenate([[k[:-1] + 'A' for k in keys0],[k[:-1] + 'B' for k in keys1]])
+            
+                if min_length is None:
+                    have_pair = True
+                elif len(newdf) >= min_length:
+                    have_pair = True
             
             yield newdf
 

@@ -13,12 +13,13 @@ def main():
     parser.add_argument("-n", "--TrajCount",   default = 10, type = int)
     parser.add_argument("-o", "--baseoutname", default = "RandTraj", type = str)
     parser.add_argument("-F", "--ForceLength", default = False, action = "store_true")
+    parser.add_argument("-S", "--SyncTime",    default = False, action = "store_true")
     parser.add_argument("-v", "--verbose",     default = False, action = "store_true")
     args = parser.parse_args()
     
     data = scc.SisterCellData(**vars(args))
     
-    for i,rt in enumerate(data.RandomTrajectories(count = args.TrajCount, force_length = args.ForceLength)):
+    for i,rt in enumerate(data.RandomTrajectories(count = args.TrajCount, force_length = args.ForceLength, sync_time = args.SyncTime)):
         fn = args.baseoutname + '{:03d}.xls'.format(i)
         if args.verbose: print("writing file '{}'".format(fn))
         rt.to_excel(fn, index = False)
