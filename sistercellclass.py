@@ -156,8 +156,6 @@ class SisterCellData(object):
             # todo: need to implement some lines of code that detect if a division spans multiple time points, and corrects the algorithm below properly
             dj = sum(np.where(np.diff(index_div) == 1)[0].flatten())
             
-            print(index_div,dj)
-            
             # timepoint of division is assumed to be the average before and after the drop in signal
             time_div  = np.concatenate([[1.5*self.__data[dataID]['time' + ks][0] - 0.5 * self.__data[dataID]['time' + ks][1]],0.5 * np.array(self.__data[dataID]['time' + ks][index_div + 1]) + 0.5 * np.array(self.__data[dataID]['time'+ks][index_div])])
             

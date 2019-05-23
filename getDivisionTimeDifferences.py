@@ -21,7 +21,6 @@ def main():
     
     for i in range(len(data)):
         if args.verbose: print(data.filenames[i])
-        print(i)
         dtd = data.DivisionTimeDifferences(i)
         outfilename = os.path.splitext(os.path.basename(data.filenames[i]))[0] + '.' + args.outfilesuffix
         np.savetxt(outfilename, np.array([np.arange(len(dtd)),dtd]).T)
