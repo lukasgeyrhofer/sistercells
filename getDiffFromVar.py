@@ -85,7 +85,7 @@ def main():
 
     diffcoeff , dc_cov = LMSQ(np.arange(mc), dt_var[:mc], cov = True)
     
-    print("# {:14.6e} {:14.6e}".format(diffcoeff[1],np.sqrt(dc_cov[1,1])), file = sys.stderr)
+    print("# {:14.6e} {:14.6e} {:14.6e} {:14.6e}".format(diffcoeff[1],np.sqrt(dc_cov[1,1]),diffcoeff[0],np.sqrt(dc_cov[0,0])), file = sys.stderr)
     
     for i,v in enumerate(zip(dt_mean[:mc],dt_var[:mc],dt_count[:mc])):
         print('{:4d} {:14.6f} {:14.6f} {:.0f}'.format(i,*v))
