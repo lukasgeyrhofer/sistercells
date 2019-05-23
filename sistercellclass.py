@@ -301,7 +301,6 @@ class SisterCellData(object):
                 startID = np.zeros(2,dtype=int)
                 if sync_time:
                     dt = int( (self[tID[0]]['time' + ab[0]][0] - self[tID[1]]['time' + ab[1]][0]) / self.timestep )
-                    print(i,dt,self[tID[0]]['time' + ab[0]][0],self[tID[1]]['time' + ab[1]][0])
                     if   dt < 0:    startID[0] = -dt
                     elif dt > 0:    startID[1] = dt
                 
