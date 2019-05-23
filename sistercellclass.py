@@ -5,14 +5,14 @@ import pandas as pd
 
 class SisterCellData(object):
     def __init__(self,**kwargs):
-        self.__infiles    = kwargs.get('infiles',[])
-        self.__debugmode  = kwargs.get('debugmode',False) # return only single trajectory in iteration
-        self.__sisterdata = kwargs.get('sisterdata',True)
+        self.__infiles            = kwargs.get('infiles',[])
+        self.__debugmode          = kwargs.get('debugmode',False) # return only single trajectory in iteration
+        self.__get_OTSU_from_both = kwargs.get('Get_OTSU_From_Both',True)
         
         # lists to store data internally
-        self.__data = list()
+        self.__data       = list()
         self.__dataorigin = list()
-        self.__keylist = list()
+        self.__keylist    = list()
                 
         # load first sheet of each Excel-File, fill internal data structure
         for filename in self.__infiles:
@@ -29,9 +29,6 @@ class SisterCellData(object):
                 if not str(k) in self.__keylist:
                     self.__keylist.append(str(k))
 
-        self.__get_OTSU_from_both = kwargs.get('Get_OTSU_From_Both',True)
-        
-        
         # there's no point in not having data ...
         # ... or something went wrong. rather stop here
         if not len(self) > 0:
@@ -118,7 +115,7 @@ class SisterCellData(object):
         return dtdA,dtdB,np.histogram(dtdA),np.histogram(dtdB),OtsuThresholdA,OtsuThresholdB
         
 
-    def CellDivisionTrajectory(self,dataID, discretize_by = 'length', sisterdata = None, additional_columns = []):
+    def CellDivisionTrajectory(self,dataID, discretize_by = 'length', additional_columns = []):
         """
         Transform measured time series data into data for each generation:
         (1) Find cell division events as a large enough drop in the measured value given by 'discretize_by'
@@ -126,10 +123,7 @@ class SisterCellData(object):
         (3) Returns two pandas dataframes for each of the discretized trajectories
         """
         if not discretize_by in self.keylist_stripped:  raise KeyError('key not found')
-        # not sure if this is needed
-        if sisterdata is None:  sisterdata = self.__sisterdata
-        if sisterdata:          keysuffix = ['A','B']    
-        else:                   keysuffix = ['']
+        keysuffix = ['A','B']    
         
         # return two pandas-dataframes for the two trajectories usually contained in one file as two elements of a list
         # as the two sisters do not need to have the same number of cell divisions, a single dataframe might cause problems with variably lengthed trajectories
@@ -151,6 +145,7 @@ class SisterCellData(object):
             # estimate a threshold from the data between the two peaks in the bimodal distribution with Otsu's method, then get indices of these transitions
             index_div = np.where(diffdata < self.otsu(alldiffdata))[0].flatten()
             
+            print('{}{} {}'.format(dataID,ks,index_div))
             
             # 'double jump': division spans two (or more) time points
             # todo: need to implement some lines of code that detect if a division spans multiple time points, and corrects the algorithm below properly
@@ -330,7 +325,7 @@ class SisterCellData(object):
                     elif dt > 0:    startID[1] = dt
                 
                 if force_length:
-                    mlen   = min([len(self[tID[0]][startID[0]:]),len(self[tID[1]][startID[0]:])])
+                    mlen   = min([len(self[tID[0]][startID[0]:]),len(self[tID[1]][startID[1]:])])
                     newdf0 = self[tID[0]].filter(items = keys0)[startID[0]:startID[0] + mlen].copy().reset_index(drop=True)
                     newdf1 = self[tID[1]].filter(items = keys1)[startID[1]:startID[1] + mlen].copy().reset_index(drop=True)
                     newdf  = pd.concat([newdf0,newdf1], axis = 'columns', ignore_index = True)
