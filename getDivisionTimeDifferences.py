@@ -14,6 +14,7 @@ def main():
     parser.add_argument("-i", "--infiles", nargs= "*", default = [])
     parser.add_argument("-o", "--outfilesuffix", default = "dtd", type = str)
     parser.add_argument("-v", "--verbose", default = False, action = "store_true")
+    parser.add_argument("-O", "--Get_OTSU_From_Both", default = True, action = "store_false")
     args = parser.parse_args()
 
     data = ssc.SisterCellData(**vars(args))

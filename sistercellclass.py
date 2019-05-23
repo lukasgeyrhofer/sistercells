@@ -22,10 +22,15 @@ class SisterCellData(object):
                 continue
             self.__data.append(tmpdata)
             self.__dataorigin.append(filename)
+            
+            self.__data[-1].dropna(inplace = True)
+            
             for k in tmpdata.keys():
                 if not str(k) in self.__keylist:
                     self.__keylist.append(str(k))
 
+        self.__get_OTSU_from_both = kwargs.get('Get_OTSU_From_Both',True)
+        
         
         # there's no point in not having data ...
         # ... or something went wrong. rather stop here
@@ -94,9 +99,24 @@ class SisterCellData(object):
         idx = np.argmax(sB)
         
         return sx[idx]
-
-
-
+    
+    
+    def DivTimeDiffHist(self, dataID, discretize_by = 'length'):
+        if not discretize_by in self.keylist_stripped:  raise KeyError('key not found')
+        
+        dtdA = np.diff(self.__data[dataID][discretize_by + 'A'])
+        dtdB = np.diff(self.__data[dataID][discretize_by + 'B'])
+        
+        if self.__get_OTSU_from_both:
+            dtd_all = np.concatenate([dtdA,dtdB])
+            OtsuThresholdA = self.otsu(dtd_all)
+            OtsuThresholdB = OtsuThresholdA
+        else:
+            OtsuThresholdA = self.otsu(dtdA)
+            OtsuThresholdB = self.otsu(dtdB)
+        
+        return dtdA,dtdB,np.histogram(dtdA),np.histogram(dtdB),OtsuThresholdA,OtsuThresholdB
+        
 
     def CellDivisionTrajectory(self,dataID, discretize_by = 'length', sisterdata = None, additional_columns = []):
         """
@@ -115,7 +135,8 @@ class SisterCellData(object):
         # as the two sisters do not need to have the same number of cell divisions, a single dataframe might cause problems with variably lengthed trajectories
         ret = list()
         
-        alldiffdata = np.concatenate([np.diff(self.__data[dataID][discretize_by + ks]) for ks in keysuffix])
+        if self.__get_OTSU_from_both:
+            alldiffdata = np.concatenate([np.diff(self.__data[dataID][discretize_by + ks]) for ks in keysuffix])
         
         for ks in keysuffix:
             # use 'discretize_by' as the column name that should serve as measurement that indicates the division
@@ -124,12 +145,18 @@ class SisterCellData(object):
             #  * scattering around small values for normal data-points
             #  * scattering around 'large' negative values for cell divisions
             diffdata  = np.diff(self.__data[dataID][discretize_by + ks])
+            if not self.__get_OTSU_from_both:
+                alldiffdata = diffdata.copy()
+            
             # estimate a threshold from the data between the two peaks in the bimodal distribution with Otsu's method, then get indices of these transitions
             index_div = np.where(diffdata < self.otsu(alldiffdata))[0].flatten()
+            
             
             # 'double jump': division spans two (or more) time points
             # todo: need to implement some lines of code that detect if a division spans multiple time points, and corrects the algorithm below properly
             dj = sum(np.where(np.diff(index_div) == 1)[0].flatten())
+            
+            print(index_div,dj)
             
             # timepoint of division is assumed to be the average before and after the drop in signal
             time_div  = np.concatenate([[1.5*self.__data[dataID]['time' + ks][0] - 0.5 * self.__data[dataID]['time' + ks][1]],0.5 * np.array(self.__data[dataID]['time' + ks][index_div + 1]) + 0.5 * np.array(self.__data[dataID]['time'+ks][index_div])])
