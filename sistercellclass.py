@@ -145,8 +145,6 @@ class SisterCellData(object):
             # estimate a threshold from the data between the two peaks in the bimodal distribution with Otsu's method, then get indices of these transitions
             index_div = np.where(diffdata < self.otsu(alldiffdata))[0].flatten()
             
-            print('{}{} {}'.format(dataID,ks,index_div))
-            
             # 'double jump': division spans two (or more) time points
             # todo: need to implement some lines of code that detect if a division spans multiple time points, and corrects the algorithm below properly
             dj = sum(np.where(np.diff(index_div) == 1)[0].flatten())
