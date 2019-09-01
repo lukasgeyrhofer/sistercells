@@ -12,23 +12,23 @@ class MDARP(object):
     """
     def __init__(self,**kwargs):
         # construct matrix A from eigenvalues and angle (0...1) between eigenvectors, assume first direction is (0,1)
-        self.__A_eigval    = np.array([self.interval(x) for x in kwargs.get('eigval',[0.9,0.5])],dtype=np.float)
-        self.__A_angle     = self.interval(kwargs.get('A_angle',0.33)) # angles between 0 .. 1
-        evec1              = np.array([0,1],dtype=np.float)
-        evec2              = np.dot(self.rotation(self.__A_angle),evec1)
-        self.__A_eigvec    = (evec1 / np.linalg.norm(evec1), evec2 / np.linalg.norm(evec2))
-        evmat              = np.array(self.__A_eigvec,dtype=float).T
-        self.A             = np.matmul(np.matmul(evmat,np.diag(self.__A_eigval)), np.linalg.inv(evmat))
+        self.__A_eigval      = np.array([self.interval(x) for x in kwargs.get('eigval',[0.9,0.5])],dtype=np.float)
+        self.__A_angle       = self.interval(kwargs.get('A_angle',0.33)) # angles between 0 .. 1
+        evec1                = np.array([0,1],dtype=np.float)
+        evec2                = np.dot(self.rotation(self.__A_angle),evec1)
+        self.__A_eigvec      = (evec1 / np.linalg.norm(evec1), evec2 / np.linalg.norm(evec2))
+        evmat                = np.array(self.__A_eigvec,dtype=float).T
+        self.A               = np.matmul(np.matmul(evmat,np.diag(self.__A_eigval)), np.linalg.inv(evmat))
         
         # projection vector is also with respect to first EVec
-        self.__alpha_angle = self.interval(kwargs.get('alpha_angle',0.67))
-        self.alpha         = np.dot(self.rotation(self.__alpha_angle),evec1)
+        self.__alpha_angle   = self.interval(kwargs.get('alpha_angle',0.67))
+        self.alpha           = np.dot(self.rotation(self.__alpha_angle),evec1)
 
         # noise, env
         self.noiseamplitudes = np.array(kwargs.get('noiseamplitudes',[1/np.sqrt(2.),1/np.sqrt(2.)]),dtype=np.float)
 
-        self.experimenttype = kwargs.get('experimenttype','sisters')
-        self.default_steps  = kwargs.get('steps',10)
+        self.experimenttype  = kwargs.get('experimenttype','sisters')
+        self.default_steps   = kwargs.get('steps',10)
         
         # initialize all dynamical variables to start
         self.reset()
@@ -61,7 +61,6 @@ class MDARP(object):
         return xA_new, xB_new
 
     def reset(self):
-        self.__current_generation = 0
         if self.experimenttype == 'sisters':
             start   = self.random()
             self.xA = np.array([start])
@@ -70,6 +69,8 @@ class MDARP(object):
             self.xA = np.array([self.random()])
             self.xB = np.array([self.random()])
         
+        self.__current_generation = 0
+
 
     def run(self,steps = None):
         self.reset()
@@ -82,6 +83,7 @@ class MDARP(object):
 
         
     def rotation(self,angle):
+        # angle in (0 ... 1)
         return np.array([[np.cos(2*np.pi*angle),np.sin(2*np.pi*angle)],[-np.sin(2*np.pi*angle),np.cos(2*np.pi*angle)]],dtype=np.float)
 
 
