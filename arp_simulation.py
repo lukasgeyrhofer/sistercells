@@ -12,7 +12,7 @@ class MDARP(object):
     """
     def __init__(self,**kwargs):
         # construct matrix A from eigenvalues and angle (0...1) between eigenvectors, assume first direction is (0,1)
-        self.__A_eigval    = np.array([self.interval(x) for x in kwargs.get('lambda',[0.9,0.5])],dtype=np.float)
+        self.__A_eigval    = np.array([self.interval(x) for x in kwargs.get('eigval',[0.9,0.5])],dtype=np.float)
         self.__A_angle     = self.interval(kwargs.get('A_angle',0.33)) # angles between 0 .. 1
         evec1              = np.array([0,1],dtype=np.float)
         evec2              = np.dot(self.rotation(self.__A_angle),evec1)
@@ -28,6 +28,7 @@ class MDARP(object):
         self.noiseamplitudes = np.array(kwargs.get('noiseamplitudes',[1/np.sqrt(2.),1/np.sqrt(2.)]),dtype=np.float)
 
         self.experimenttype = kwargs.get('experimenttype','sisters')
+        self.default_steps  = kwargs.get('steps',10)
         
         # initialize all dynamical variables to start
         self.reset()
@@ -70,8 +71,11 @@ class MDARP(object):
             self.xB = np.array([self.random()])
         
 
-    def run(self,steps):
+    def run(self,steps = None):
         self.reset()
+        if steps is None:
+            steps = self.default_steps
+            
         for i in np.arange(steps):
             self.step()
         return self.xA, self.xB
@@ -99,8 +103,17 @@ class MDARP(object):
     
     def output(self,step = None,alphaangle = None):
         if step is None:    step = -1
-        else:               step = np.min([0,np.max([len(self.xA),step])])
+        else:               step = np.max([0,np.min([len(self.xA)-1,step])])
         return self.projection(self.xA[step],alphaangle), self.projection(self.xB[step],alphaangle)
+
+
+    def output_all(self,alphaangle = None):
+        return np.array([self.output(step = i,alphaangle = alphaangle) for i in range(len(self))]).T
+    
+    
+    def __len__(self):
+        assert len(self.xA) == len(self.xB)
+        return len(self.xA)
 
 
 def main():
@@ -111,7 +124,7 @@ def main():
     
     parser_single = parser.add_argument_group(description = "==== single step parameters ====")
     parser_single.add_argument("-A","--A_angle",default=.33,type=float)
-    parser_single.add_argument("-L","--lambda",type=float,nargs=2,default=[0.9,0.5])
+    parser_single.add_argument("-E","--eigval",type=float,nargs=2,default=[0.9,0.5])
     parser_single.add_argument("-a","--alpha_angle",default=.67,type=float)
     parser_single.add_argument("-N","--noiseamplitudes",default=[1,1],nargs=2,type=float)
 
