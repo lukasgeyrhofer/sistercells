@@ -6,9 +6,9 @@ import sys,math
 import pandas as pd
 
 
-class MDARP(object):
+class ARP(object):
     """
-    multi-dimensional autoregressive process with several noise terms
+    2-dimensional autoregressive process with 2 noise terms
     """
     def __init__(self,**kwargs):
         # construct matrix A from eigenvalues and angle (0...1) between eigenvectors, assume first direction is (0,1)
@@ -118,6 +118,7 @@ class MDARP(object):
         return len(self.xA)
 
 
+
 def main():
     parser = argparse.ArgumentParser()
     parser_process = parser.add_argument_group(description = "==== process parameters ====")
@@ -132,7 +133,7 @@ def main():
 
     args = parser.parse_args()
 
-    p = MDARP(**vars(args))
+    p = ARP(**vars(args))
 
     for s in np.arange(args.steps):
         print('{:4d} {:8.4f} {:8.4f}'.format(s,*p.output()))
