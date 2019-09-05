@@ -118,6 +118,22 @@ class ARP(object):
         return len(self.xA)
 
 
+    # analytical results
+    def AmATk(self,m = 0,k = 0):
+        # exact result for product A^m (A.T)^k in our parameterization, in particular using that first eigenvector is (0,1)
+        l1m = np.power(self.__A_eigval[0],m)
+        l2m = np.power(self.__A_eigval[1],m)
+        l1k = np.power(self.__A_eigval[0],k)
+        l2k = np.power(self.__A_eigval[1],k)
+        
+        return np.array([[ l2m * l2k,                                            l2m*(l1k-l2k)/np.tan(2 * np.pi * self.__A_angle) ],
+                         [ l2k * (l1m - l2m)/np.tan(2 * np.pi * self.__A_angle), l1m*l1k + (l1k-l2k)*(l1m-l2m)/(np.tan(2 * np.pi * self.__A_angle)**2)], dtype = np.float)
+
+
+    def StationaryCorrelations(self,generation):
+        # < x0A x0A.T > = ...
+        # return np.array(
+
 
 def main():
     parser = argparse.ArgumentParser()
