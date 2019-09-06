@@ -120,7 +120,7 @@ class ARP(object):
 
     # analytical results
     def AmATk(self,m = 0,k = 0):
-        # exact result for product A^m (A.T)^k in our parameterization, in particular using that first eigenvector is (0,1)
+        # exact result for product A^m (A.T)^k in our parameterization, using that first eigenvector is (0,1)
         l1m = np.power(self.__A_eigval[0],m)
         l2m = np.power(self.__A_eigval[1],m)
         l1k = np.power(self.__A_eigval[0],k)
@@ -130,9 +130,19 @@ class ARP(object):
                          [ l2k * (l1m - l2m)/np.tan(2 * np.pi * self.__A_angle), l1m*l1k + (l1k-l2k)*(l1m-l2m)/(np.tan(2 * np.pi * self.__A_angle)**2)], dtype = np.float)
 
 
+    def sumInf_AmATm(self):
+        # sum_{m=0}^Infinity A^m (A.T)^m
+        il1l1 = 1./(1-self.__A_eigval[0]**2)
+        il2l2 = 1./(1-self.__A_eigval[1]**2)
+        il1l2 = 1./(1-self.__A_eigval[0]*self.__A_eigval[1])
+        itan  = 1./np.tan(2 * np.pi * self.__A_angle)
+        return np.array([[ il2l2,                  (il1l2 - il2l2) * itan],
+                         [ (il1l2 - il2l2) * itan, il1l1 + (il1l1 - 2*il1l2 + il2l2)*itan]], dtype = np.float)
+    
+
     def StationaryCorrelations(self,generation):
         # < x0A x0A.T > = ...
-        # return np.array(
+        return (self.noiseamplitudes[0]**2 + self.noiseamplitudes[1]**2) * self.sumInf_AmATm()
 
 
 def main():
