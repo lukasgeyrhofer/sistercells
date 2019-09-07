@@ -145,6 +145,19 @@ class ARP(object):
         return (self.noiseamplitudes[0]**2 + self.noiseamplitudes[1]**2) * self.sumInf_AmATm()
 
 
+    def VarianceDifferenceProjection(self):
+        # Var[alpha.T sum(xA - xB) sum(xA - xB).T alpha]
+        if self.experimenttype == 'sisters':
+            dx0 = np.zeros((2,2))
+        elif self.experimenttype == 'nonsisters':
+            dx0 = self.noiseamplitudes[0]**2 * self.sumInf_AmATm()
+        elif self.experimenttype == 'control':
+            dx0 = self.StationaryCorrelations()
+        
+        
+        
+        
+
 def main():
     parser = argparse.ArgumentParser()
     parser_process = parser.add_argument_group(description = "==== process parameters ====")
