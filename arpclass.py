@@ -32,6 +32,10 @@ class ARP(object):
         
         # initialize all dynamical variables to start
         self.reset()
+        
+        
+        # initialize analytical computations
+        self.sumInf_AmATm = self.compute_sumInf_AmATm()
 
 
     def random(self,mean = 0, sqrt_var = 1):
@@ -119,7 +123,7 @@ class ARP(object):
 
 
     # analytical results
-    def AmATk(self,m = 0,k = 0):
+    def compute_AmATk(self,m = 0,k = 0):
         # exact result for product A^m (A.T)^k in our parameterization, using that first eigenvector is (0,1)
         l1m = np.power(self.__A_eigval[0],m)
         l2m = np.power(self.__A_eigval[1],m)
@@ -127,10 +131,20 @@ class ARP(object):
         l2k = np.power(self.__A_eigval[1],k)
         
         return np.array([[ l2m * l2k,                                            l2m*(l1k-l2k)/np.tan(2 * np.pi * self.__A_angle) ],
-                         [ l2k * (l1m - l2m)/np.tan(2 * np.pi * self.__A_angle), l1m*l1k + (l1k-l2k)*(l1m-l2m)/(np.tan(2 * np.pi * self.__A_angle)**2)], dtype = np.float)
+                         [ l2k * (l1m - l2m)/np.tan(2 * np.pi * self.__A_angle), l1m*l1k + (l1k-l2k)*(l1m-l2m)/(np.tan(2 * np.pi * self.__A_angle)**2)]], dtype = np.float)
 
+    def compute_Am(self,m=1):
+        l1m = np.power(self.__A_eigval[0],m)
+        l2m = np.power(self.__A_eigval[1],m)
+        return np.array([[l2m,0],[(l1m-l2m)/np.tan(2 * np.pi * self.__A_angle),l1m]],dtype=np.float)
+    
+    def compute_ATk(self,k=1):
+        l1k = np.power(self.__A_eigval[0],k)
+        l2k = np.power(self.__A_eigval[1],k)
+        return np.array([[l2m,(l1m-l2m)/np.tan(2 * np.pi * self.__A_angle)],[0,l1m]],dtype=np.float)
+        
 
-    def sumInf_AmATm(self):
+    def compute_sumInf_AmATm(self):
         # sum_{m=0}^Infinity A^m (A.T)^m
         il1l1 = 1./(1-self.__A_eigval[0]**2)
         il2l2 = 1./(1-self.__A_eigval[1]**2)
@@ -140,22 +154,27 @@ class ARP(object):
                          [ (il1l2 - il2l2) * itan, il1l1 + (il1l1 - 2*il1l2 + il2l2)*itan]], dtype = np.float)
     
 
-    def StationaryCorrelations(self,generation):
-        # < x0A x0A.T > = ...
-        return (self.noiseamplitudes[0]**2 + self.noiseamplitudes[1]**2) * self.sumInf_AmATm()
-
-
-    def VarianceDifferenceProjection(self):
-        # Var[alpha.T sum(xA - xB) sum(xA - xB).T alpha]
+    def StationaryDifferenceCorrelations(self):
         if self.experimenttype == 'sisters':
-            dx0 = np.zeros((2,2))
+            return np.zeros((2,2))
         elif self.experimenttype == 'nonsisters':
-            dx0 = self.noiseamplitudes[0]**2 * self.sumInf_AmATm()
+            return self.noiseamplitudes[0]**2 * self.sumInf_AmATm
         elif self.experimenttype == 'control':
-            dx0 = self.StationaryCorrelations()
-        
-        
-        
+            return (self.noiseamplitudes[0]**2 + self.noiseamplitudes[1]**2) * self.sumInf_AmATm
+
+
+    def VarianceDifferenceProjection(self,generation = 1):
+        # Var[alpha.T sum(xA - xB) sum(xA - xB).T alpha]
+        Adx0AT = np.matmul(self.A,np.matmul(self.StationaryDifferenceCorrelations(),self.A.T))
+        noiseamplitude2 = self.noiseamplitude[0]**2
+        if self.experimenttype == 'control':
+            noiseamplitude2 += self.noiseamplitude[1]**2
+        corr = np.zeros((2,2))
+        for m in range(generation):
+            for k in range(generation):
+                corr += np.matmul(self.compute_Am(m),np.matmul(Adx0AT + noiseamplitude * np.max((m,k)),self.compute_ATk(k)))
+        return corr
+
         
 
 def main():
