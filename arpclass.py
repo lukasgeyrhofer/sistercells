@@ -35,7 +35,8 @@ class ARP(object):
         
         
         # initialize analytical computations
-        self.sumInf_AmATm = self.compute_sumInf_AmATm()
+        self.sumInf_AmATm   = self.compute_sumInf_AmATm()
+        self.vardiff        = np.array([0],dtype=np.float)
 
 
     def random(self,mean = 0, sqrt_var = 1):
@@ -141,7 +142,7 @@ class ARP(object):
     def compute_ATk(self,k=1):
         l1k = np.power(self.__A_eigval[0],k)
         l2k = np.power(self.__A_eigval[1],k)
-        return np.array([[l2m,(l1m-l2m)/np.tan(2 * np.pi * self.__A_angle)],[0,l1m]],dtype=np.float)
+        return np.array([[l2k,(l1k-l2k)/np.tan(2 * np.pi * self.__A_angle)],[0,l1k]],dtype=np.float)
         
 
     def compute_sumInf_AmATm(self):
@@ -163,17 +164,27 @@ class ARP(object):
             return (self.noiseamplitudes[0]**2 + self.noiseamplitudes[1]**2) * self.sumInf_AmATm
 
 
-    def VarianceDifferenceProjection(self,generation = 1):
+    def VarianceDifferenceProjectionValue(self,generation = 1):
         # Var[alpha.T sum(xA - xB) sum(xA - xB).T alpha]
         Adx0AT = np.matmul(self.A,np.matmul(self.StationaryDifferenceCorrelations(),self.A.T))
-        noiseamplitude2 = self.noiseamplitude[0]**2
+        noiseamplitude2 = self.noiseamplitudes[0]**2
         if self.experimenttype == 'control':
-            noiseamplitude2 += self.noiseamplitude[1]**2
+            noiseamplitude2 += self.noiseamplitudes[1]**2
         corr = np.zeros((2,2))
         for m in range(generation):
             for k in range(generation):
-                corr += np.matmul(self.compute_Am(m),np.matmul(Adx0AT + noiseamplitude * np.max((m,k)),self.compute_ATk(k)))
-        return corr
+                corr += np.matmul(self.compute_Am(m),np.matmul(Adx0AT + noiseamplitude2 * (generation - np.max((m,k))),self.compute_ATk(k)))
+        return np.dot(self.alpha,np.dot(corr,self.alpha))
+
+
+    def VarianceDifferenceProjection(self,generation = 1):
+        if len(self.vardiff) <= generation:
+            tmp = list()
+            for i in range(len(self.vardiff),generation + 1):
+                tmp.append(self.VarianceDifferenceProjectionValue(generation = i))
+            self.vardiff = np.concatenate([self.vardiff,tmp])
+        return self.vardiff[:generation+1] # array starts at generation 0
+        
 
         
 
