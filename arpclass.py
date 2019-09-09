@@ -37,6 +37,7 @@ class ARP(object):
         # initialize analytical computations
         self.sumInf_AmATm   = self.compute_sumInf_AmATm()
         self.vardiff        = np.array([0],dtype=np.float)
+        self.itan           = 1./np.tan(2 * np.pi * self.__A_angle)
 
 
     def random(self,mean = 0, sqrt_var = 1):
@@ -130,19 +131,18 @@ class ARP(object):
         l2m = np.power(self.__A_eigval[1],m)
         l1k = np.power(self.__A_eigval[0],k)
         l2k = np.power(self.__A_eigval[1],k)
-        
-        return np.array([[ l2m * l2k,                                            l2m*(l1k-l2k)/np.tan(2 * np.pi * self.__A_angle) ],
-                         [ l2k * (l1m - l2m)/np.tan(2 * np.pi * self.__A_angle), l1m*l1k + (l1k-l2k)*(l1m-l2m)/(np.tan(2 * np.pi * self.__A_angle)**2)]], dtype = np.float)
+        return np.array([[ l2m * l2k,                     l2m * (l1k - l2k) * self.itan ],
+                         [ l2k * (l1m - l2m) * self.itan, l1m * l1k + (l1k - l2k) * (l1m - l2m) * self.itan * self.itan]], dtype = np.float)
 
     def compute_Am(self,m=1):
         l1m = np.power(self.__A_eigval[0],m)
         l2m = np.power(self.__A_eigval[1],m)
-        return np.array([[l2m,0],[(l1m-l2m)/np.tan(2 * np.pi * self.__A_angle),l1m]],dtype=np.float)
+        return np.array([[l2m,0],[(l1m-l2m) * self.itan,l1m]],dtype=np.float)
     
     def compute_ATk(self,k=1):
         l1k = np.power(self.__A_eigval[0],k)
         l2k = np.power(self.__A_eigval[1],k)
-        return np.array([[l2k,(l1k-l2k)/np.tan(2 * np.pi * self.__A_angle)],[0,l1k]],dtype=np.float)
+        return np.array([[l2k,(l1k-l2k)*self.itan],[0,l1k]],dtype=np.float)
         
 
     def compute_sumInf_AmATm(self):
@@ -150,9 +150,8 @@ class ARP(object):
         il1l1 = 1./(1-self.__A_eigval[0]**2)
         il2l2 = 1./(1-self.__A_eigval[1]**2)
         il1l2 = 1./(1-self.__A_eigval[0]*self.__A_eigval[1])
-        itan  = 1./np.tan(2 * np.pi * self.__A_angle)
-        return np.array([[ il2l2,                  (il1l2 - il2l2) * itan],
-                         [ (il1l2 - il2l2) * itan, il1l1 + (il1l1 - 2*il1l2 + il2l2)*itan]], dtype = np.float)
+        return np.array([[ il2l2,                       (il1l2 - il2l2) * self.itan],
+                         [ (il1l2 - il2l2) * self.itan, il1l1 + (il1l1 - 2*il1l2 + il2l2) * self.itan * self.itan]], dtype = np.float)
     
 
     def StationaryDifferenceCorrelations(self):
