@@ -173,7 +173,7 @@ class ARP(object):
         corr = np.zeros((2,2))
         for m in range(generation):
             for k in range(generation):
-                corr += np.matmul(self.compute_Am(m),np.matmul(Adx0AT + noiseamplitude2 * (generation - np.max((m,k))),self.compute_ATk(k)))
+                corr += np.matmul(self.compute_Am(m),np.matmul(Adx0AT + noiseamplitude2 * (generation - np.max((m,k))) * np.eye(2),self.compute_ATk(k)))
         return np.dot(self.alpha,np.dot(corr,self.alpha))
 
 
