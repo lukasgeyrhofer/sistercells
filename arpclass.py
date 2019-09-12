@@ -35,9 +35,9 @@ class ARP(object):
         
         
         # initialize analytical computations
+        self.itan           = 1./np.tan(2 * np.pi * self.__A_angle)
         self.sumInf_AmATm   = self.compute_sumInf_AmATm()
         self.vardiff        = np.array([0],dtype=np.float)
-        self.itan           = 1./np.tan(2 * np.pi * self.__A_angle)
 
 
     def random(self,mean = 0, sqrt_var = 1):
